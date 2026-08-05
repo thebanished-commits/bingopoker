@@ -28,97 +28,127 @@ ADMIN_PASSWORD = "admin"
 if "is_admin" not in st.session_state:
     st.session_state["is_admin"] = False
 
-# Custom Mobile-First CSS Styling
+# Custom High-End Casino Velvet & Gold Theme
 st.markdown("""
 <style>
-    /* Dark / Gold Modern Theme */
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@600;800&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap');
+
     .stApp {
-        background-color: #0b1320;
-        color: #e2e8f0;
+        background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 45%, #070b14 100%) !important;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: #f8fafc;
     }
     
-    /* Header Container */
+    /* Main Banner Header */
     .main-header {
-        background: linear-gradient(135deg, #1b365d 0%, #0f223d 100%);
-        padding: 1.2rem;
-        border-radius: 12px;
+        background: linear-gradient(135deg, rgba(30, 27, 75, 0.95) 0%, rgba(15, 23, 42, 0.95) 50%, rgba(180, 83, 9, 0.3) 100%);
+        border: 2px solid #f59e0b;
+        box-shadow: 0 10px 30px rgba(245, 158, 11, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+        border-radius: 16px;
+        padding: 1.5rem 1rem;
         text-align: center;
-        margin-bottom: 1rem;
-        border: 1px solid #2b4c7e;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        margin-bottom: 1.5rem;
+        backdrop-filter: blur(10px);
     }
     .main-title {
-        color: #facc15;
-        font-family: 'Arial', sans-serif;
+        font-family: 'Outfit', sans-serif;
+        background: linear-gradient(135deg, #fffbeb 0%, #facc15 40%, #f59e0b 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
         font-weight: 800;
-        font-size: 1.8rem;
+        font-size: 2.2rem;
         margin: 0;
-        text-transform: uppercase;
-        letter-spacing: 1px;
+        letter-spacing: 2px;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
     }
     .sub-title {
-        color: #94a3b8;
-        font-size: 0.95rem;
-        margin-top: 4px;
-    }
-    
-    /* Center Logo Image */
-    .logo-container {
-        display: flex;
-        justify-content: center;
-        margin-bottom: 0.5rem;
+        color: #cbd5e1;
+        font-size: 1.05rem;
+        font-weight: 600;
+        margin-top: 6px;
+        letter-spacing: 0.5px;
     }
     
     /* Metric Cards */
-    div[data-testid="stMetricValue"] {
-        font-size: 1.5rem !important;
-        color: #facc15 !important;
-        font-weight: 700;
-    }
     div[data-testid="stMetric"] {
-        background-color: #162238;
-        border: 1px solid #283a5a;
-        padding: 12px;
-        border-radius: 10px;
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
+        border: 1px solid rgba(245, 158, 11, 0.35);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        border-radius: 14px;
+        padding: 14px;
+        transition: all 0.3s ease;
     }
-    
-    /* Buttons */
-    .stButton>button {
-        width: 100%;
-        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-        color: white;
-        font-weight: 700;
-        border: none;
-        border-radius: 8px;
-        padding: 0.6rem 1rem;
-        font-size: 1rem;
-        transition: all 0.2s ease;
+    div[data-testid="stMetric"]:hover {
+        border-color: #f59e0b;
+        box-shadow: 0 8px 25px rgba(245, 158, 11, 0.35);
+        transform: translateY(-2px);
     }
-    .stButton>button:hover {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        transform: translateY(-1px);
+    div[data-testid="stMetricLabel"] {
+        color: #94a3b8 !important;
+        font-size: 0.9rem !important;
+        font-weight: 700 !important;
+        text-transform: uppercase;
+    }
+    div[data-testid="stMetricValue"] {
+        font-family: 'Outfit', sans-serif !important;
+        font-size: 1.75rem !important;
+        background: linear-gradient(135deg, #ffffff 0%, #fbbf24 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 800 !important;
     }
     
     /* Tabs */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 6px;
+        gap: 8px;
+        border-bottom: 2px solid rgba(245, 158, 11, 0.25);
     }
     .stTabs [data-baseweb="tab"] {
-        padding: 10px 16px;
-        background-color: #162238;
-        border-radius: 8px 8px 0 0;
-        color: #cbd5e1;
-        font-weight: 600;
+        padding: 12px 20px;
+        background: rgba(30, 41, 59, 0.6);
+        border-radius: 10px 10px 0 0;
+        color: #94a3b8;
+        font-weight: 700;
+        font-size: 1rem;
+        border: 1px solid transparent;
     }
     .stTabs [aria-selected="true"] {
-        background-color: #2563eb !important;
-        color: white !important;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+        color: #ffffff !important;
+        border-color: #60a5fa !important;
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+    }
+    
+    /* Action Buttons (Gold Metallic) */
+    .stButton>button {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+        color: #0f172a !important;
+        font-weight: 800 !important;
+        font-size: 1.05rem !important;
+        border: none !important;
+        border-radius: 10px !important;
+        padding: 0.75rem 1.5rem !important;
+        box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35) !important;
+        letter-spacing: 0.5px;
+    }
+    .stButton>button:hover {
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
+        box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5) !important;
+        transform: translateY(-1px);
+    }
+    
+    /* Dataframe Container */
+    .stDataFrame {
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.5);
     }
 
     /* Mobile adjustments */
     @media (max-width: 768px) {
-        .main-title { font-size: 1.4rem; }
-        div[data-testid="stMetricValue"] { font-size: 1.2rem !important; }
+        .main-title { font-size: 1.5rem; }
+        div[data-testid="stMetricValue"] { font-size: 1.3rem !important; }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -139,11 +169,11 @@ else:
         st.session_state["is_admin"] = False
         st.rerun()
 
-# Centered Logo above title banner
+# Centered Glowing Logo above title banner
 if LOGO_PATH and os.path.exists(LOGO_PATH):
     col_l1, col_l2, col_l3 = st.columns([1, 1, 1])
     with col_l2:
-        st.image(LOGO_PATH, width=150)
+        st.image(LOGO_PATH, width=160)
 
 st.markdown("""
 <div class="main-header">
