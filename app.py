@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
+import base64
 import data_manager
 import report_generator
 
@@ -13,16 +14,19 @@ st.set_page_config(
 
 FECHAS_STANDARD = [f"{i:02d}" for i in range(1, 11)]
 
-REL_LOGO = os.path.join(os.path.dirname(__file__), 'assets', 'logo.png')
-ALT_LOGO_PATH = r'C:\programas\poker\logo.jpeg'
+def get_logo_b64():
+    p_small = os.path.join(os.path.dirname(__file__), 'assets', 'logo_small.png')
+    p_main = os.path.join(os.path.dirname(__file__), 'assets', 'logo.png')
+    target = p_small if os.path.exists(p_small) else (p_main if os.path.exists(p_main) else None)
+    if target:
+        try:
+            with open(target, 'rb') as f:
+                return base64.b64encode(f.read()).decode()
+        except Exception:
+            return None
+    return None
 
-if os.path.exists(REL_LOGO):
-    LOGO_PATH = REL_LOGO
-elif os.path.exists(ALT_LOGO_PATH):
-    LOGO_PATH = ALT_LOGO_PATH
-else:
-    LOGO_PATH = None
-
+logo_b64 = get_logo_b64()
 ADMIN_PASSWORD = "admin"
 
 if "is_admin" not in st.session_state:
@@ -31,7 +35,7 @@ if "is_admin" not in st.session_state:
 # Custom High-End Casino Velvet & Gold Theme
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@600;800&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@700;800&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap');
 
     .stApp {
         background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 45%, #070b14 100%) !important;
@@ -39,9 +43,9 @@ st.markdown("""
         color: #f8fafc;
     }
     
-    /* Main Banner Header */
+    /* Main Unified Header Banner */
     .main-header {
-        background: linear-gradient(135deg, rgba(30, 27, 75, 0.95) 0%, rgba(15, 23, 42, 0.95) 50%, rgba(180, 83, 9, 0.3) 100%);
+        background: linear-gradient(135deg, rgba(30, 27, 75, 0.95) 0%, rgba(15, 23, 42, 0.95) 50%, rgba(180, 83, 9, 0.25) 100%);
         border: 2px solid #f59e0b;
         box-shadow: 0 10px 30px rgba(245, 158, 11, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.2);
         border-radius: 16px;
@@ -57,16 +61,27 @@ st.markdown("""
         -webkit-text-fill-color: transparent;
         font-weight: 800;
         font-size: 2.2rem;
-        margin: 0;
+        margin: 0 0 10px 0;
         letter-spacing: 2px;
         text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
     }
+    .header-logo-img {
+        max-width: 140px;
+        height: auto;
+        margin: 8px auto 12px auto;
+        filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.4));
+        transition: transform 0.3s ease;
+    }
+    .header-logo-img:hover {
+        transform: scale(1.05);
+    }
     .sub-title {
-        color: #cbd5e1;
-        font-size: 1.05rem;
-        font-weight: 600;
-        margin-top: 6px;
-        letter-spacing: 0.5px;
+        color: #fbbf24;
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-top: 4px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
     }
     
     /* Metric Cards */
@@ -148,6 +163,8 @@ st.markdown("""
     /* Mobile adjustments */
     @media (max-width: 768px) {
         .main-title { font-size: 1.5rem; }
+        .sub-title { font-size: 1.05rem; }
+        .header-logo-img { max-width: 110px; }
         div[data-testid="stMetricValue"] { font-size: 1.3rem !important; }
     }
 </style>
@@ -169,16 +186,14 @@ else:
         st.session_state["is_admin"] = False
         st.rerun()
 
-# Centered Glowing Logo above title banner
-if LOGO_PATH and os.path.exists(LOGO_PATH):
-    col_l1, col_l2, col_l3 = st.columns([1, 1, 1])
-    with col_l2:
-        st.image(LOGO_PATH, width=160)
+# Unified Banner: Title -> Logo -> Subtitle
+logo_html = f'<img src="data:image/png;base64,{logo_b64}" class="header-logo-img" alt="Logo">' if logo_b64 else ''
 
-st.markdown("""
+st.markdown(f"""
 <div class="main-header">
     <h1 class="main-title">BINGO POKER CLUB 2026</h1>
-    <div class="sub-title">Liga Oficial de Poker - Gestión de Posiciones y Rake</div>
+    {logo_html}
+    <div class="sub-title">Liga Oficial de Poker</div>
 </div>
 """, unsafe_allow_html=True)
 
