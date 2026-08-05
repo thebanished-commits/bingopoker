@@ -27,7 +27,7 @@ def get_logo_b64():
     return None
 
 logo_b64 = get_logo_b64()
-ADMIN_PASSWORD = "admin"
+ADMIN_PASSWORD = "admin123"  # Contraseña actualizada por el administrador
 
 if "is_admin" not in st.session_state:
     st.session_state["is_admin"] = False
