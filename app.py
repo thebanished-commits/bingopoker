@@ -62,6 +62,13 @@ st.markdown("""
         margin-top: 4px;
     }
     
+    /* Center Logo Image */
+    .logo-container {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 0.5rem;
+    }
+    
     /* Metric Cards */
     div[data-testid="stMetricValue"] {
         font-size: 1.5rem !important;
@@ -132,17 +139,18 @@ else:
         st.session_state["is_admin"] = False
         st.rerun()
 
-header_col_img, header_col_txt = st.columns([1, 4])
-with header_col_img:
-    if LOGO_PATH and os.path.exists(LOGO_PATH):
-        st.image(LOGO_PATH, width=140)
-with header_col_txt:
-    st.markdown("""
-    <div class="main-header">
-        <h1 class="main-title">BINGO POKER CLUB 2026</h1>
-        <div class="sub-title">Liga Oficial de Poker - Gestión de Posiciones y Rake</div>
-    </div>
-    """, unsafe_allow_html=True)
+# Centered Logo above title banner
+if LOGO_PATH and os.path.exists(LOGO_PATH):
+    col_l1, col_l2, col_l3 = st.columns([1, 1, 1])
+    with col_l2:
+        st.image(LOGO_PATH, width=150)
+
+st.markdown("""
+<div class="main-header">
+    <h1 class="main-title">BINGO POKER CLUB 2026</h1>
+    <div class="sub-title">Liga Oficial de Poker - Gestión de Posiciones y Rake</div>
+</div>
+""", unsafe_allow_html=True)
 
 data = data_manager.load_data()
 df_pos = data["df_posiciones"]
