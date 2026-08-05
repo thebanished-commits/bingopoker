@@ -113,25 +113,38 @@ st.markdown("""
         font-weight: 800 !important;
     }
     
-    /* Tabs */
+    /* Premium Tabs Selector - Metallic Gold Pills */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
+        gap: 10px;
+        background: transparent;
         border-bottom: 2px solid rgba(245, 158, 11, 0.25);
+        padding-bottom: 8px;
     }
     .stTabs [data-baseweb="tab"] {
-        padding: 12px 20px;
-        background: rgba(30, 41, 59, 0.6);
-        border-radius: 10px 10px 0 0;
-        color: #94a3b8;
+        padding: 10px 20px;
+        background: rgba(30, 41, 59, 0.7);
+        border-radius: 12px;
+        color: #cbd5e1;
         font-weight: 700;
         font-size: 1rem;
-        border: 1px solid transparent;
+        border: 1px solid rgba(245, 158, 11, 0.2);
+        transition: all 0.25s ease;
+    }
+    .stTabs [data-baseweb="tab"]:hover {
+        background: rgba(45, 60, 85, 0.9);
+        color: #facc15;
+        border-color: #f59e0b;
     }
     .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
-        color: #ffffff !important;
-        border-color: #60a5fa !important;
-        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+        color: #0f172a !important;
+        font-weight: 800 !important;
+        border-color: #fbbf24 !important;
+        box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4) !important;
+    }
+    /* Hide default red underline */
+    .stTabs [data-baseweb="tab-highlight"] {
+        display: none !important;
     }
     
     /* Action Buttons (Gold Metallic) */
@@ -166,6 +179,7 @@ st.markdown("""
         .sub-title { font-size: 1.05rem; }
         .header-logo-img { max-width: 110px; }
         div[data-testid="stMetricValue"] { font-size: 1.3rem !important; }
+        .stTabs [data-baseweb="tab"] { padding: 8px 14px; font-size: 0.9rem; }
     }
 </style>
 """, unsafe_allow_html=True)
