@@ -27,7 +27,7 @@ def get_logo_b64():
     return None
 
 logo_b64 = get_logo_b64()
-ADMIN_PASSWORD = "admin123"  # Contraseña actualizada por el administrador
+ADMIN_PASSWORD = "admin123"
 
 if "is_admin" not in st.session_state:
     st.session_state["is_admin"] = False
@@ -113,6 +113,63 @@ st.markdown("""
         font-weight: 800 !important;
     }
     
+    /* Prize Breakdown Component */
+    .prize-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 16px;
+        margin: 1rem 0 1.5rem 0;
+    }
+    .prize-card {
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+        border: 1px solid rgba(245, 158, 11, 0.4);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        border-radius: 14px;
+        padding: 16px;
+        transition: all 0.3s ease;
+    }
+    .prize-card:hover {
+        border-color: #f59e0b;
+        transform: translateY(-2px);
+    }
+    .prize-card-title {
+        color: #facc15;
+        font-weight: 800;
+        font-size: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }
+    .prize-card-total {
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: #ffffff;
+        margin-bottom: 12px;
+        border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+        padding-bottom: 8px;
+    }
+    .prize-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 0;
+        font-size: 0.95rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .prize-row:last-child {
+        border-bottom: none;
+    }
+    .prize-row span {
+        color: #cbd5e1;
+        font-weight: 600;
+    }
+    .prize-row strong {
+        color: #fbbf24;
+        font-weight: 800;
+        font-size: 1.05rem;
+    }
+
     /* Premium Tabs Selector - Metallic Gold Pills */
     .stTabs [data-baseweb="tab-list"] {
         gap: 10px;
@@ -142,7 +199,6 @@ st.markdown("""
         border-color: #fbbf24 !important;
         box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4) !important;
     }
-    /* Hide default red underline */
     .stTabs [data-baseweb="tab-highlight"] {
         display: none !important;
     }
@@ -218,16 +274,40 @@ total_rake = data["total_rake"]
 payouts = data["payouts"]
 subheaders = data["subheaders"]
 
+# Top Metrics Row
 c1, c2, c3, c4 = st.columns(4)
 with c1:
     st.metric("💰 Rake Total", f"${int(total_rake):,}")
 with c2:
-    st.metric("🏆 Campeonato (60%)", f"${int(total_rake * 0.60):,}")
+    st.metric("🏆 Pozo Campeonato (60%)", f"${int(total_rake * 0.60):,}")
 with c3:
-    st.metric("🃏 Mesa Final (40%)", f"${int(total_rake * 0.40):,}")
+    st.metric("🃏 Pozo Mesa Final (40%)", f"${int(total_rake * 0.40):,}")
 with c4:
     lider = df_pos.iloc[0]["Jugador"] if not df_pos.empty else "N/A"
     st.metric("🥇 Líder Actual", lider)
+
+# Prize Breakdown Cards for 1st, 2nd, 3rd places in both events
+camp_tot = total_rake * 0.60
+mf_tot = total_rake * 0.40
+
+st.markdown(f"""
+<div class="prize-container">
+    <div class="prize-card">
+        <div class="prize-card-title">🏆 PREMIOS CAMPEONATO (60%)</div>
+        <div class="prize-card-total">${int(camp_tot):,}</div>
+        <div class="prize-row"><span>🥇 1º Lugar (50%)</span><strong>${int(camp_tot * 0.50):,}</strong></div>
+        <div class="prize-row"><span>🥈 2º Lugar (30%)</span><strong>${int(camp_tot * 0.30):,}</strong></div>
+        <div class="prize-row"><span>🥉 3º Lugar (20%)</span><strong>${int(camp_tot * 0.20):,}</strong></div>
+    </div>
+    <div class="prize-card">
+        <div class="prize-card-title">🃏 PREMIOS MESA FINAL (40%)</div>
+        <div class="prize-card-total">${int(mf_tot):,}</div>
+        <div class="prize-row"><span>🥇 1º Lugar (50%)</span><strong>${int(mf_tot * 0.50):,}</strong></div>
+        <div class="prize-row"><span>🥈 2º Lugar (30%)</span><strong>${int(mf_tot * 0.30):,}</strong></div>
+        <div class="prize-row"><span>🥉 3º Lugar (20%)</span><strong>${int(mf_tot * 0.20):,}</strong></div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 st.write("---")
 
