@@ -32,7 +32,7 @@ ADMIN_PASSWORD = "admin123"
 if "is_admin" not in st.session_state:
     st.session_state["is_admin"] = False
 
-# Custom High-End Casino Velvet & Gold Theme
+# Custom High-End Casino Velvet & Gold Theme with Rounded Pills Tabs
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@700;800&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap');
@@ -100,13 +100,13 @@ st.markdown("""
     }
     div[data-testid="stMetricLabel"] {
         color: #94a3b8 !important;
-        font-size: 0.9rem !important;
+        font-size: 0.85rem !important;
         font-weight: 700 !important;
         text-transform: uppercase;
     }
     div[data-testid="stMetricValue"] {
         font-family: 'Outfit', sans-serif !important;
-        font-size: 1.75rem !important;
+        font-size: 1.6rem !important;
         background: linear-gradient(135deg, #ffffff 0%, #fbbf24 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -116,7 +116,7 @@ st.markdown("""
     /* Prize Breakdown Component */
     .prize-container {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
         gap: 16px;
         margin: 1rem 0 1.5rem 0;
     }
@@ -135,26 +135,26 @@ st.markdown("""
     .prize-card-title {
         color: #facc15;
         font-weight: 800;
-        font-size: 1rem;
+        font-size: 0.95rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         margin-bottom: 4px;
     }
     .prize-card-total {
         font-family: 'Outfit', sans-serif;
-        font-size: 1.6rem;
+        font-size: 1.5rem;
         font-weight: 800;
         color: #ffffff;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
         border-bottom: 1px solid rgba(245, 158, 11, 0.2);
-        padding-bottom: 8px;
+        padding-bottom: 6px;
     }
     .prize-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 6px 0;
-        font-size: 0.95rem;
+        padding: 5px 0;
+        font-size: 0.9rem;
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
     .prize-row:last-child {
@@ -167,39 +167,47 @@ st.markdown("""
     .prize-row strong {
         color: #fbbf24;
         font-weight: 800;
-        font-size: 1.05rem;
+        font-size: 1rem;
     }
 
-    /* Premium Tabs Selector - Metallic Gold Pills */
+    /* Fully Rounded Pill Tabs (Smooth Rounded Corners) */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 10px;
-        background: transparent;
-        border-bottom: 2px solid rgba(245, 158, 11, 0.25);
-        padding-bottom: 8px;
+        gap: 12px !important;
+        background: transparent !important;
+        border-bottom: 2px solid rgba(245, 158, 11, 0.2) !important;
+        padding-bottom: 10px !important;
     }
-    .stTabs [data-baseweb="tab"] {
-        padding: 10px 20px;
-        background: rgba(30, 41, 59, 0.7);
-        border-radius: 12px;
-        color: #cbd5e1;
-        font-weight: 700;
-        font-size: 1rem;
-        border: 1px solid rgba(245, 158, 11, 0.2);
-        transition: all 0.25s ease;
+    .stTabs [data-baseweb="tab"], .stTabs button[role="tab"] {
+        padding: 10px 24px !important;
+        background: rgba(30, 41, 59, 0.75) !important;
+        border-radius: 30px !important;
+        color: #cbd5e1 !important;
+        font-weight: 700 !important;
+        font-size: 0.95rem !important;
+        border: 1px solid rgba(245, 158, 11, 0.25) !important;
+        transition: all 0.25s ease !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
     }
-    .stTabs [data-baseweb="tab"]:hover {
-        background: rgba(45, 60, 85, 0.9);
-        color: #facc15;
-        border-color: #f59e0b;
+    .stTabs [data-baseweb="tab"]:hover, .stTabs button[role="tab"]:hover {
+        background: rgba(45, 60, 85, 0.9) !important;
+        color: #facc15 !important;
+        border-color: #f59e0b !important;
     }
-    .stTabs [aria-selected="true"] {
+    .stTabs [aria-selected="true"], .stTabs button[aria-selected="true"] {
         background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
         color: #0f172a !important;
         font-weight: 800 !important;
+        border-radius: 30px !important;
         border-color: #fbbf24 !important;
-        box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4) !important;
+        box-shadow: 0 4px 15px rgba(245, 158, 11, 0.45) !important;
     }
-    .stTabs [data-baseweb="tab-highlight"] {
+    /* Hide red underline completely */
+    .stTabs [data-baseweb="tab-highlight"], div[data-baseweb="tab-highlight"] {
+        display: none !important;
+        height: 0px !important;
+        background-color: transparent !important;
+    }
+    .stTabs [data-baseweb="tab-border"] {
         display: none !important;
     }
     
@@ -210,7 +218,7 @@ st.markdown("""
         font-weight: 800 !important;
         font-size: 1.05rem !important;
         border: none !important;
-        border-radius: 10px !important;
+        border-radius: 12px !important;
         padding: 0.75rem 1.5rem !important;
         box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35) !important;
         letter-spacing: 0.5px;
@@ -234,8 +242,8 @@ st.markdown("""
         .main-title { font-size: 1.5rem; }
         .sub-title { font-size: 1.05rem; }
         .header-logo-img { max-width: 110px; }
-        div[data-testid="stMetricValue"] { font-size: 1.3rem !important; }
-        .stTabs [data-baseweb="tab"] { padding: 8px 14px; font-size: 0.9rem; }
+        div[data-testid="stMetricValue"] { font-size: 1.25rem !important; }
+        .stTabs [data-baseweb="tab"], .stTabs button[role="tab"] { padding: 8px 16px !important; font-size: 0.85rem !important; border-radius: 20px !important; }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -271,40 +279,45 @@ data = data_manager.load_data()
 df_pos = data["df_posiciones"]
 rake_dict = data["rake_dict"]
 total_rake = data["total_rake"]
+camp_total = data["camp_total"]
+mf_total = data["mf_total"]
+gastos_mf = data["gastos_mf"]
 payouts = data["payouts"]
 subheaders = data["subheaders"]
 
-# Top Metrics Row
+# Top Metrics Row (4 Metrics: Total Rake, 50% Campeonato, 40% Mesa Final, 10% Gastos)
 c1, c2, c3, c4 = st.columns(4)
 with c1:
     st.metric("💰 Rake Total", f"${int(total_rake):,}")
 with c2:
-    st.metric("🏆 Pozo Campeonato (60%)", f"${int(total_rake * 0.60):,}")
+    st.metric("🏆 Campeonato (50%)", f"${int(camp_total):,}")
 with c3:
-    st.metric("🃏 Pozo Mesa Final (40%)", f"${int(total_rake * 0.40):,}")
+    st.metric("🃏 Mesa Final (40%)", f"${int(mf_total):,}")
 with c4:
-    lider = df_pos.iloc[0]["Jugador"] if not df_pos.empty else "N/A"
-    st.metric("🥇 Líder Actual", lider)
+    st.metric("🧾 Gastos MF (10%)", f"${int(gastos_mf):,}")
 
-# Prize Breakdown Cards for 1st, 2nd, 3rd places in both events
-camp_tot = total_rake * 0.60
-mf_tot = total_rake * 0.40
-
+# Prize Breakdown Cards (50% Campeonato, 40% Mesa Final, 10% Gastos MF)
 st.markdown(f"""
 <div class="prize-container">
     <div class="prize-card">
-        <div class="prize-card-title">🏆 PREMIOS CAMPEONATO (60%)</div>
-        <div class="prize-card-total">${int(camp_tot):,}</div>
-        <div class="prize-row"><span>🥇 1º Lugar (50%)</span><strong>${int(camp_tot * 0.50):,}</strong></div>
-        <div class="prize-row"><span>🥈 2º Lugar (30%)</span><strong>${int(camp_tot * 0.30):,}</strong></div>
-        <div class="prize-row"><span>🥉 3º Lugar (20%)</span><strong>${int(camp_tot * 0.20):,}</strong></div>
+        <div class="prize-card-title">🏆 PREMIOS CAMPEONATO (50%)</div>
+        <div class="prize-card-total">${int(camp_total):,}</div>
+        <div class="prize-row"><span>🥇 1º Lugar (50%)</span><strong>${int(camp_total * 0.50):,}</strong></div>
+        <div class="prize-row"><span>🥈 2º Lugar (30%)</span><strong>${int(camp_total * 0.30):,}</strong></div>
+        <div class="prize-row"><span>🥉 3º Lugar (20%)</span><strong>${int(camp_total * 0.20):,}</strong></div>
     </div>
     <div class="prize-card">
         <div class="prize-card-title">🃏 PREMIOS MESA FINAL (40%)</div>
-        <div class="prize-card-total">${int(mf_tot):,}</div>
-        <div class="prize-row"><span>🥇 1º Lugar (50%)</span><strong>${int(mf_tot * 0.50):,}</strong></div>
-        <div class="prize-row"><span>🥈 2º Lugar (30%)</span><strong>${int(mf_tot * 0.30):,}</strong></div>
-        <div class="prize-row"><span>🥉 3º Lugar (20%)</span><strong>${int(mf_tot * 0.20):,}</strong></div>
+        <div class="prize-card-total">${int(mf_total):,}</div>
+        <div class="prize-row"><span>🥇 1º Lugar (50%)</span><strong>${int(mf_total * 0.50):,}</strong></div>
+        <div class="prize-row"><span>🥈 2º Lugar (30%)</span><strong>${int(mf_total * 0.30):,}</strong></div>
+        <div class="prize-row"><span>🥉 3º Lugar (20%)</span><strong>${int(mf_total * 0.20):,}</strong></div>
+    </div>
+    <div class="prize-card">
+        <div class="prize-card-title">🧾 GASTOS MESA FINAL (10%)</div>
+        <div class="prize-card-total">${int(gastos_mf):,}</div>
+        <div class="prize-row"><span>Fondo de Gastos Organización</span><strong>10% Rake</strong></div>
+        <div class="prize-row"><span>Mantenimiento & Logística</span><strong>Acumulado</strong></div>
     </div>
 </div>
 """, unsafe_allow_html=True)
