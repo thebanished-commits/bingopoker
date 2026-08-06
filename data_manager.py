@@ -79,8 +79,10 @@ def load_data():
     rake_dict = dict(zip(rake_cols, rake_vals))
     total_rake = sum(rake_vals)
     
-    camp_total = total_rake * 0.60
+    # Updated distribution: 50% Campeonato, 40% Mesa Final, 10% Gastos Mesa Final
+    camp_total = total_rake * 0.50
     mf_total = total_rake * 0.40
+    gastos_mf = total_rake * 0.10
     
     payouts = [
         {"Pos": 1, "Campeonato": int(camp_total * 0.50), "Mesa Final": int(mf_total * 0.50)},
@@ -94,6 +96,9 @@ def load_data():
         "subheaders": subheaders,
         "rake_dict": rake_dict,
         "total_rake": total_rake,
+        "camp_total": camp_total,
+        "mf_total": mf_total,
+        "gastos_mf": gastos_mf,
         "payouts": payouts
     }
 
@@ -135,7 +140,7 @@ def save_data(df_posiciones, rake_dict, subheaders_list=None):
     
     ws_pos.cell(row=3, column=17, value=total_r)
     
-    camp_tot = total_r * 0.60
+    camp_tot = total_r * 0.50
     mf_tot = total_r * 0.40
     payout_dist = [(0.50, 0.50), (0.30, 0.30), (0.20, 0.20)]
     for idx, (p_camp, p_mf) in enumerate(payout_dist):

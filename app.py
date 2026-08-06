@@ -279,9 +279,9 @@ data = data_manager.load_data()
 df_pos = data["df_posiciones"]
 rake_dict = data["rake_dict"]
 total_rake = data["total_rake"]
-camp_total = data["camp_total"]
-mf_total = data["mf_total"]
-gastos_mf = data["gastos_mf"]
+camp_total = data.get("camp_total", total_rake * 0.50)
+mf_total = data.get("mf_total", total_rake * 0.40)
+gastos_mf = data.get("gastos_mf", total_rake * 0.10)
 payouts = data["payouts"]
 subheaders = data["subheaders"]
 
