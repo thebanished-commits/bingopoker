@@ -32,7 +32,7 @@ ADMIN_PASSWORD = "admin123"
 if "is_admin" not in st.session_state:
     st.session_state["is_admin"] = False
 
-# Custom High-End Casino Velvet & Gold Theme with Rounded Pills Tabs
+# Custom High-End Casino Velvet & Gold Theme with Fixed Inline Responsive Image Controls
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@700;800&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap');
@@ -64,16 +64,6 @@ st.markdown("""
         margin: 0 0 10px 0;
         letter-spacing: 2px;
         text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-    }
-    .header-logo-img {
-        max-width: 140px;
-        height: auto;
-        margin: 8px auto 12px auto;
-        filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.4));
-        transition: transform 0.3s ease;
-    }
-    .header-logo-img:hover {
-        transform: scale(1.05);
     }
     .sub-title {
         color: #fbbf24;
@@ -241,7 +231,6 @@ st.markdown("""
     @media (max-width: 768px) {
         .main-title { font-size: 1.5rem; }
         .sub-title { font-size: 1.05rem; }
-        .header-logo-img { max-width: 110px; }
         div[data-testid="stMetricValue"] { font-size: 1.25rem !important; }
         .stTabs [data-baseweb="tab"], .stTabs button[role="tab"] { padding: 8px 16px !important; font-size: 0.85rem !important; border-radius: 20px !important; }
     }
@@ -264,8 +253,8 @@ else:
         st.session_state["is_admin"] = False
         st.rerun()
 
-# Unified Banner: Title -> Logo -> Subtitle
-logo_html = f'<img src="data:image/png;base64,{logo_b64}" class="header-logo-img" alt="Logo">' if logo_b64 else ''
+# Unified Banner: Title -> Logo (Strict Inline Sizing) -> Subtitle
+logo_html = f'<img src="data:image/png;base64,{logo_b64}" style="max-width:130px !important; width:130px !important; height:auto !important; display:block; margin:8px auto 12px auto; filter:drop-shadow(0 0 12px rgba(245,158,11,0.4));" alt="Logo">' if logo_b64 else ''
 
 st.markdown(f"""
 <div class="main-header">
