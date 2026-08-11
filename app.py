@@ -32,7 +32,7 @@ ADMIN_PASSWORD = "admin123"
 if "is_admin" not in st.session_state:
     st.session_state["is_admin"] = False
 
-# Custom High-End Casino Velvet & Gold Theme
+# Custom High-End Casino Velvet & Gold Theme (Compact & Responsive Header)
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
@@ -43,15 +43,15 @@ st.markdown("""
         color: #f8fafc;
     }
     
-    /* Main Unified Header Banner */
+    /* Main Unified Compact Header Banner */
     .main-header {
         background: linear-gradient(135deg, rgba(30, 27, 75, 0.95) 0%, rgba(15, 23, 42, 0.95) 50%, rgba(180, 83, 9, 0.25) 100%);
         border: 2px solid #f59e0b;
-        box-shadow: 0 10px 30px rgba(245, 158, 11, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.2);
-        border-radius: 16px;
-        padding: 1.5rem 1rem;
+        box-shadow: 0 8px 25px rgba(245, 158, 11, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+        border-radius: 14px;
+        padding: 0.85rem 1rem;
         text-align: center;
-        margin-bottom: 1.5rem;
+        margin-bottom: 1.2rem;
         backdrop-filter: blur(10px);
     }
     .main-title {
@@ -60,16 +60,16 @@ st.markdown("""
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         font-weight: 800;
-        font-size: 2.3rem;
-        margin: 0 0 10px 0;
-        letter-spacing: 2px;
+        font-size: 1.85rem;
+        margin: 0 0 4px 0;
+        letter-spacing: 1.5px;
         text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
     }
     .sub-title {
         color: #fbbf24;
-        font-size: 1.3rem;
+        font-size: 1.05rem;
         font-weight: 700;
-        margin-top: 4px;
+        margin-top: 2px;
         letter-spacing: 1px;
         text-transform: uppercase;
     }
@@ -80,7 +80,7 @@ st.markdown("""
         border: 1px solid rgba(245, 158, 11, 0.35);
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
         border-radius: 14px;
-        padding: 14px;
+        padding: 12px;
         transition: all 0.3s ease;
     }
     div[data-testid="stMetric"]:hover {
@@ -90,13 +90,13 @@ st.markdown("""
     }
     div[data-testid="stMetricLabel"] {
         color: #cbd5e1 !important;
-        font-size: 0.95rem !important;
+        font-size: 0.9rem !important;
         font-weight: 700 !important;
         text-transform: uppercase;
     }
     div[data-testid="stMetricValue"] {
         font-family: 'Outfit', sans-serif !important;
-        font-size: 1.7rem !important;
+        font-size: 1.6rem !important;
         background: linear-gradient(135deg, #ffffff 0%, #fbbf24 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -115,7 +115,7 @@ st.markdown("""
         border: 1px solid rgba(245, 158, 11, 0.4);
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
         border-radius: 14px;
-        padding: 18px;
+        padding: 16px;
         transition: all 0.3s ease;
     }
     .prize-card:hover {
@@ -125,17 +125,17 @@ st.markdown("""
     .prize-card-title {
         color: #facc15;
         font-weight: 800;
-        font-size: 1rem;
+        font-size: 0.95rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         margin-bottom: 4px;
     }
     .prize-card-total {
         font-family: 'Outfit', sans-serif;
-        font-size: 1.7rem;
+        font-size: 1.6rem;
         font-weight: 800;
         color: #ffffff;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
         border-bottom: 1px solid rgba(245, 158, 11, 0.2);
         padding-bottom: 6px;
     }
@@ -143,8 +143,8 @@ st.markdown("""
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 6px 0;
-        font-size: 1rem;
+        padding: 5px 0;
+        font-size: 0.95rem;
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
     .prize-row:last-child {
@@ -157,7 +157,7 @@ st.markdown("""
     .prize-row strong {
         color: #fbbf24;
         font-weight: 800;
-        font-size: 1.1rem;
+        font-size: 1.05rem;
     }
 
     /* Fixed & Rich Gold Metallic Tab Buttons */
@@ -168,12 +168,12 @@ st.markdown("""
         padding-bottom: 12px !important;
     }
     .stTabs [data-baseweb="tab"], .stTabs button[role="tab"] {
-        padding: 12px 28px !important;
+        padding: 10px 24px !important;
         background: rgba(15, 23, 42, 0.85) !important;
-        border-radius: 14px !important;
+        border-radius: 12px !important;
         color: #f8fafc !important;
         font-weight: 700 !important;
-        font-size: 1.1rem !important;
+        font-size: 1.05rem !important;
         border: 2px solid rgba(245, 158, 11, 0.4) !important;
         transition: all 0.25s ease !important;
         box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
@@ -189,13 +189,13 @@ st.markdown("""
         background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%) !important;
         color: #ffffff !important;
         font-weight: 800 !important;
-        font-size: 1.15rem !important;
-        border-radius: 14px !important;
+        font-size: 1.1rem !important;
+        border-radius: 12px !important;
         border: 2px solid #fef08a !important;
         box-shadow: 0 6px 22px rgba(245, 158, 11, 0.5) !important;
         text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7) !important;
     }
-    /* Hide red underline completely across all browsers */
+    /* Hide red underline completely */
     .stTabs [data-baseweb="tab-highlight"], 
     div[data-baseweb="tab-highlight"], 
     div[data-baseweb="tab-border"],
@@ -214,10 +214,10 @@ st.markdown("""
         background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
         color: #0f172a !important;
         font-weight: 800 !important;
-        font-size: 1.1rem !important;
+        font-size: 1.05rem !important;
         border: none !important;
         border-radius: 12px !important;
-        padding: 0.85rem 1.8rem !important;
+        padding: 0.8rem 1.6rem !important;
         box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35) !important;
         letter-spacing: 0.5px;
     }
@@ -240,21 +240,21 @@ st.markdown("""
         width: 100%;
         border-collapse: separate;
         border-spacing: 0 8px;
-        margin: 1rem 0;
+        margin: 0.8rem 0;
     }
     .leaderboard-table th {
         background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
         color: #fbbf24;
         font-weight: 800;
-        font-size: 0.95rem;
-        padding: 12px 10px;
+        font-size: 0.9rem;
+        padding: 10px 8px;
         text-align: center;
         border-top: 1px solid rgba(245, 158, 11, 0.3);
         border-bottom: 1px solid rgba(245, 158, 11, 0.3);
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
-    .leaderboard-table th:first-child { border-top-left-radius: 10px; border-bottom-left-radius: 10px; border-left: 1px solid rgba(245, 158, 11, 0.3); text-align: left; padding-left: 16px; }
+    .leaderboard-table th:first-child { border-top-left-radius: 10px; border-bottom-left-radius: 10px; border-left: 1px solid rgba(245, 158, 11, 0.3); text-align: left; padding-left: 14px; }
     .leaderboard-table th:last-child { border-top-right-radius: 10px; border-bottom-right-radius: 10px; border-right: 1px solid rgba(245, 158, 11, 0.3); }
     
     .leaderboard-row {
@@ -269,14 +269,14 @@ st.markdown("""
         box-shadow: 0 6px 18px rgba(245, 158, 11, 0.2);
     }
     .leaderboard-row td {
-        padding: 12px 10px;
+        padding: 10px 8px;
         text-align: center;
-        font-size: 1rem;
+        font-size: 0.95rem;
         color: #f8fafc;
         font-weight: 600;
     }
-    .leaderboard-row td:first-child { border-top-left-radius: 10px; border-bottom-left-radius: 10px; text-align: left; padding-left: 16px; font-weight: 800; }
-    .leaderboard-row td:last-child { border-top-right-radius: 10px; border-bottom-right-radius: 10px; font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 800; color: #facc15; }
+    .leaderboard-row td:first-child { border-top-left-radius: 10px; border-bottom-left-radius: 10px; text-align: left; padding-left: 14px; font-weight: 800; }
+    .leaderboard-row td:last-child { border-top-right-radius: 10px; border-bottom-right-radius: 10px; font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 800; color: #facc15; }
     
     .rank-1 { background: linear-gradient(135deg, rgba(180, 83, 9, 0.35) 0%, rgba(30, 41, 59, 0.95) 100%) !important; border: 2px solid #f59e0b !important; }
     .rank-2 { background: linear-gradient(135deg, rgba(100, 116, 139, 0.35) 0%, rgba(30, 41, 59, 0.95) 100%) !important; border: 1.5px solid #94a3b8 !important; }
@@ -306,14 +306,14 @@ st.markdown("""
     }
     .rake-chip-title {
         color: #94a3b8;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         font-weight: 700;
         text-transform: uppercase;
         margin-bottom: 4px;
     }
     .rake-chip-val {
         font-family: 'Outfit', sans-serif;
-        font-size: 1.35rem;
+        font-size: 1.3rem;
         font-weight: 800;
         color: #facc15;
     }
@@ -333,7 +333,7 @@ st.markdown("""
         background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
         border: 1px solid rgba(245, 158, 11, 0.3);
         border-radius: 14px;
-        padding: 18px;
+        padding: 16px;
         margin-bottom: 12px;
         display: flex;
         justify-content: space-between;
@@ -351,13 +351,13 @@ st.markdown("""
     }
     .cal-num {
         font-family: 'Outfit', sans-serif;
-        font-size: 1.5rem;
+        font-size: 1.4rem;
         font-weight: 800;
         color: #facc15;
         min-width: 100px;
     }
     .cal-desc {
-        font-size: 1.15rem;
+        font-size: 1.1rem;
         font-weight: 700;
         color: #f8fafc;
     }
@@ -365,8 +365,8 @@ st.markdown("""
         background: #f59e0b;
         color: #0f172a;
         font-weight: 800;
-        font-size: 0.85rem;
-        padding: 4px 12px;
+        font-size: 0.8rem;
+        padding: 4px 10px;
         border-radius: 20px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -376,34 +376,35 @@ st.markdown("""
         background: linear-gradient(135deg, #1e1b4b 0%, rgba(180, 83, 9, 0.4) 100%) !important;
         border: 2px solid #fbbf24 !important;
         box-shadow: 0 8px 30px rgba(251, 191, 36, 0.35) !important;
-        padding: 22px !important;
+        padding: 20px !important;
         border-radius: 16px !important;
         text-align: center;
         margin-top: 20px;
     }
     .cal-final-title {
         font-family: 'Outfit', sans-serif;
-        font-size: 1.6rem;
+        font-size: 1.5rem;
         font-weight: 800;
         color: #fbbf24;
         margin-bottom: 6px;
         letter-spacing: 1px;
     }
     .cal-final-desc {
-        font-size: 1.3rem;
+        font-size: 1.2rem;
         font-weight: 700;
         color: #ffffff;
     }
 
     /* Mobile adjustments */
     @media (max-width: 768px) {
-        .main-title { font-size: 1.6rem; }
-        .sub-title { font-size: 1.1rem; }
-        div[data-testid="stMetricValue"] { font-size: 1.4rem !important; }
-        .stTabs [data-baseweb="tab"], .stTabs button[role="tab"] { padding: 10px 18px !important; font-size: 0.95rem !important; border-radius: 12px !important; }
+        .main-header { padding: 0.75rem 0.5rem; margin-bottom: 1rem; }
+        .main-title { font-size: 1.4rem; }
+        .sub-title { font-size: 0.95rem; }
+        div[data-testid="stMetricValue"] { font-size: 1.3rem !important; }
+        .stTabs [data-baseweb="tab"], .stTabs button[role="tab"] { padding: 8px 14px !important; font-size: 0.9rem !important; border-radius: 10px !important; }
         .cal-card { flex-direction: column; align-items: flex-start; gap: 6px; }
-        .rake-chip-val { font-size: 1.15rem; }
-        .leaderboard-table th, .leaderboard-row td { padding: 8px 4px; font-size: 0.85rem; }
+        .rake-chip-val { font-size: 1.1rem; }
+        .leaderboard-table th, .leaderboard-row td { padding: 8px 4px; font-size: 0.8rem; }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -424,8 +425,8 @@ else:
         st.session_state["is_admin"] = False
         st.rerun()
 
-# Unified Banner: Title -> Logo (Strict Inline Sizing) -> Subtitle
-logo_html = f'<img src="data:image/png;base64,{logo_b64}" style="max-width:130px !important; width:130px !important; height:auto !important; display:block; margin:8px auto 12px auto; filter:drop-shadow(0 0 12px rgba(245,158,11,0.4));" alt="Logo">' if logo_b64 else ''
+# Unified Compact Header Banner: Optimized Logo Sizing (85px on Desktop, 75px on Mobile)
+logo_html = f'<img src="data:image/png;base64,{logo_b64}" style="max-width:85px !important; width:85px !important; height:auto !important; display:block; margin:4px auto 6px auto; filter:drop-shadow(0 0 10px rgba(245,158,11,0.4));" alt="Logo">' if logo_b64 else ''
 
 st.markdown(f"""
 <div class="main-header">
@@ -454,7 +455,7 @@ with c2:
 with c3:
     st.metric("🃏 Mesa Final (40%)", f"${int(mf_total):,}")
 with c4:
-    st.metric("Receipt Gastos MF (10%)", f"${int(gastos_mf):,}")
+    st.metric("🧾 Gastos MF (10%)", f"${int(gastos_mf):,}")
 
 # Prize Breakdown Cards (50% Campeonato, 40% Mesa Final, 10% Gastos MF)
 st.markdown(f"""
