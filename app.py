@@ -350,7 +350,7 @@ with c2:
 with c3:
     st.metric("🃏 Mesa Final (40%)", f"${int(mf_total):,}")
 with c4:
-    st.metric("🧾 Gastos MF (10%)", f"${int(gastos_mf):,}")
+    st.metric("Receipt Gastos MF (10%)", f"${int(gastos_mf):,}")
 
 # Prize Breakdown Cards (50% Campeonato, 40% Mesa Final, 10% Gastos MF)
 st.markdown(f"""
@@ -439,22 +439,14 @@ with tab3:
 
 with tab5:
     st.subheader("📅 Calendario Oficial de Fechas 2026 - 2027")
-    st.caption("Programación de las fechas de la temporada y el Gran Evento Final.")
+    st.caption("Programación leída en vivo desde Google Sheets.")
     
-    schedule_data = [
-        {"fecha": "Fecha 3", "mes": "Agosto", "desc": "Jueves 20 de agosto de 2026", "next": True},
-        {"fecha": "Fecha 4", "mes": "Septiembre", "desc": "Jueves 3 de septiembre de 2026", "next": False},
-        {"fecha": "Fecha 5", "mes": "Octubre", "desc": "Jueves 1 de octubre de 2026", "next": False},
-        {"fecha": "Fecha 6", "mes": "Octubre", "desc": "Jueves 15 de octubre de 2026", "next": False},
-        {"fecha": "Fecha 7", "mes": "Noviembre", "desc": "Jueves 5 de noviembre de 2026", "next": False},
-        {"fecha": "Fecha 8", "mes": "Noviembre", "desc": "Jueves 19 de noviembre de 2026", "next": False},
-        {"fecha": "Fecha 9", "mes": "Diciembre", "desc": "Jueves 3 de diciembre de 2026", "next": False},
-        {"fecha": "Fecha 10", "mes": "Diciembre", "desc": "Jueves 17 de diciembre de 2026", "next": False},
-    ]
+    schedule_data = data.get("schedule_data", [])
+    evento_final = data.get("evento_final", "Sabado 09 de Enero 2027 desde las 14 horas")
     
     for s in schedule_data:
-        card_class = "cal-card cal-next" if s["next"] else "cal-card"
-        badge_html = '<span class="cal-badge">🔥 Próximo Torneo</span>' if s["next"] else ''
+        card_class = "cal-card cal-next" if s.get("next") else "cal-card"
+        badge_html = '<span class="cal-badge">🔥 Próximo Torneo</span>' if s.get("next") else ''
         st.markdown(f"""
         <div class="{card_class}">
             <div class="cal-num">{s['fecha']} {badge_html}</div>
@@ -462,10 +454,10 @@ with tab5:
         </div>
         """, unsafe_allow_html=True)
         
-    st.markdown("""
+    st.markdown(f"""
     <div class="cal-final">
         <div class="cal-final-title">🏆 GRAN EVENTO MESA FINAL</div>
-        <div class="cal-final-desc">Sábado 09 de Enero 2027 desde las 14:00 hrs</div>
+        <div class="cal-final-desc">🗓️ {evento_final}</div>
     </div>
     """, unsafe_allow_html=True)
 

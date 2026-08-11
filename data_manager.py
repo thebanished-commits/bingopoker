@@ -8,6 +8,7 @@ import requests
 GOOGLE_SHEET_ID = "1LSb_nVlUkh6BpgdpAUneCpv5P4y65hTlyQFTLnD9jc4"
 URL_POS_CSV = f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Posiciones"
 URL_RAKE_CSV = f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=rake"
+URL_CAL_CSV = f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Calendario"
 
 LOCAL_EXCEL = r'C:\programas\poker\bingo poker club 2026.xlsx'
 REL_EXCEL = os.path.join(os.path.dirname(__file__), 'bingo poker club 2026.xlsx')
@@ -28,6 +29,18 @@ POINTS_RULES = {
 
 FECHAS_STANDARD = [f"{i:02d}" for i in range(1, 11)]
 
+DEFAULT_CALENDARIO = [
+    {"fecha": "Fecha 3", "mes": "Agosto", "desc": "Jueves 20 de agosto de 2026", "next": True},
+    {"fecha": "Fecha 4", "mes": "Septiembre", "desc": "Jueves 3 de septiembre de 2026", "next": False},
+    {"fecha": "Fecha 5", "mes": "Octubre", "desc": "Jueves 1 de octubre de 2026", "next": False},
+    {"fecha": "Fecha 6", "mes": "Octubre", "desc": "Jueves 15 de octubre de 2026", "next": False},
+    {"fecha": "Fecha 7", "mes": "Noviembre", "desc": "Jueves 5 de noviembre de 2026", "next": False},
+    {"fecha": "Fecha 8", "mes": "Noviembre", "desc": "Jueves 19 de noviembre de 2026", "next": False},
+    {"fecha": "Fecha 9", "mes": "Diciembre", "desc": "Jueves 3 de diciembre de 2026", "next": False},
+    {"fecha": "Fecha 10", "mes": "Diciembre", "desc": "Jueves 17 de diciembre de 2026", "next": False},
+]
+DEFAULT_EVENTO_FINAL = "Sabado 09 de Enero 2027 desde las 14 horas"
+
 def create_backup():
     if os.path.exists(EXCEL_PATH):
         backup_path = EXCEL_PATH.replace('.xlsx', '_backup.xlsx')
@@ -41,7 +54,38 @@ def create_backup():
 def load_data():
     create_backup()
     
-    # Attempt loading from Google Sheets Cloud CSV with generous 15s timeout
+    # Load Calendario from Google Sheets if available
+    schedule_data = DEFAULT_CALENDARIO
+    evento_final = DEFAULT_EVENTO_FINAL
+    
+    try:
+        res_cal = requests.get(URL_CAL_CSV, timeout=10)
+        if res_cal.status_code == 200:
+            df_c = pd.read_csv(io.StringIO(res_cal.text))
+            parsed_cal = []
+            for idx, r in df_c.iterrows():
+                f_val = r.get("Fecha") if "Fecha" in r else r.iloc[0]
+                m_val = r.get("Mes") if "Mes" in r else r.iloc[1]
+                d_val = r.get("Descripcion") if "Descripcion" in r else (r.get("Descripción") if "Descripción" in r else r.iloc[2])
+                
+                if pd.isna(f_val) or str(f_val).strip() == "":
+                    if not pd.isna(d_val) and str(d_val).strip():
+                        evento_final = str(d_val).strip()
+                else:
+                    f_num_str = str(int(float(f_val))) if isinstance(f_val, (int, float)) and not pd.isna(f_val) else str(f_val).strip()
+                    f_name = f"Fecha {f_num_str}" if not str(f_num_str).startswith("Fecha") else f_num_str
+                    parsed_cal.append({
+                        "fecha": f_name,
+                        "mes": str(m_val).strip() if not pd.isna(m_val) else "",
+                        "desc": str(d_val).strip() if not pd.isna(d_val) else "",
+                        "next": (len(parsed_cal) == 0)
+                    })
+            if parsed_cal:
+                schedule_data = parsed_cal
+    except Exception as e:
+        print("Calendario fetch warning:", e)
+
+    # Attempt loading Posiciones & Rake from Google Sheets
     try:
         res_pos = requests.get(URL_POS_CSV, timeout=15)
         res_rake = requests.get(URL_RAKE_CSV, timeout=15)
@@ -116,7 +160,9 @@ def load_data():
                 "camp_total": camp_total,
                 "mf_total": mf_total,
                 "gastos_mf": gastos_mf,
-                "payouts": payouts
+                "payouts": payouts,
+                "schedule_data": schedule_data,
+                "evento_final": evento_final
             }
     except Exception as e:
         print("Google Sheets fetch warning, falling back to local Excel:", e)
@@ -185,7 +231,9 @@ def load_data():
         "camp_total": camp_total,
         "mf_total": mf_total,
         "gastos_mf": gastos_mf,
-        "payouts": payouts
+        "payouts": payouts,
+        "schedule_data": schedule_data,
+        "evento_final": evento_final
     }
 
 def save_data(df_posiciones, rake_dict, subheaders_list=None):
