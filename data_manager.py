@@ -1,7 +1,13 @@
 import pandas as pd
 import openpyxl
 import os
+import io
 import shutil
+import requests
+
+GOOGLE_SHEET_ID = "1LSb_nVlUkh6BpgdpAUneCpv5P4y65hTlyQFTLnD9jc4"
+URL_POS_CSV = f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Posiciones"
+URL_RAKE_CSV = f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=rake"
 
 LOCAL_EXCEL = r'C:\programas\poker\bingo poker club 2026.xlsx'
 REL_EXCEL = os.path.join(os.path.dirname(__file__), 'bingo poker club 2026.xlsx')
@@ -34,8 +40,89 @@ def create_backup():
 
 def load_data():
     create_backup()
-    xl = pd.ExcelFile(EXCEL_PATH)
     
+    # Attempt loading from Google Sheets Cloud CSV first
+    try:
+        res_pos = requests.get(URL_POS_CSV, timeout=5)
+        res_rake = requests.get(URL_RAKE_CSV, timeout=5)
+        
+        if res_pos.status_code == 200 and res_rake.status_code == 200:
+            df_raw = pd.read_csv(io.StringIO(res_pos.text), header=None)
+            
+            subheaders = [str(df_raw.iloc[2, 3 + i]) if not pd.isna(df_raw.iloc[2, 3 + i]) else "" for i in range(10)]
+            
+            players_data = []
+            for r in range(2, len(df_raw)):
+                row = df_raw.iloc[r]
+                p_name = row[2]
+                if pd.isna(p_name) or str(p_name).strip() == "" or str(p_name).strip().lower() in ["jugador", "pos.", "fecha"]:
+                    continue
+                
+                pts = {}
+                for col_i, f_name in enumerate(FECHAS_STANDARD):
+                    val = row[4 + col_i]
+                    try:
+                        pts[f_name] = int(float(val)) if not pd.isna(val) else 0
+                    except Exception:
+                        pts[f_name] = 0
+                
+                total_pts = sum(pts.values())
+                players_data.append({
+                    "Pos": len(players_data) + 1,
+                    "Jugador": str(p_name).strip(),
+                    **pts,
+                    "Total": total_pts
+                })
+                
+            df_pos = pd.DataFrame(players_data)
+            if not df_pos.empty:
+                df_pos = df_pos.sort_values(by="Total", ascending=False).reset_index(drop=True)
+                df_pos["Pos"] = range(1, len(df_pos) + 1)
+                
+            cols_order = ["Pos", "Jugador"] + FECHAS_STANDARD + ["Total"]
+            for col in cols_order:
+                if col not in df_pos.columns:
+                    df_pos[col] = 0
+            df_pos = df_pos[cols_order]
+
+            df_rake_raw = pd.read_csv(io.StringIO(res_rake.text), header=None)
+            rake_cols = [f"F{i}" for i in range(1, 11)]
+            rake_dict = {}
+            for i in range(1, 11):
+                val = df_rake_raw.iloc[1, i] if len(df_rake_raw) > 1 else 0
+                try:
+                    rake_dict[f"F{i}"] = float(val) if not pd.isna(val) else 0.0
+                except Exception:
+                    rake_dict[f"F{i}"] = 0.0
+                    
+            total_rake = sum(rake_dict.values())
+            
+            camp_total = total_rake * 0.50
+            mf_total = total_rake * 0.40
+            gastos_mf = total_rake * 0.10
+            
+            payouts = [
+                {"Pos": 1, "Campeonato": int(camp_total * 0.50), "Mesa Final": int(mf_total * 0.50)},
+                {"Pos": 2, "Campeonato": int(camp_total * 0.30), "Mesa Final": int(mf_total * 0.30)},
+                {"Pos": 3, "Campeonato": int(camp_total * 0.20), "Mesa Final": int(mf_total * 0.20)},
+            ]
+            
+            return {
+                "df_posiciones": df_pos,
+                "fechas_headers": FECHAS_STANDARD,
+                "subheaders": subheaders,
+                "rake_dict": rake_dict,
+                "total_rake": total_rake,
+                "camp_total": camp_total,
+                "mf_total": mf_total,
+                "gastos_mf": gastos_mf,
+                "payouts": payouts
+            }
+    except Exception as e:
+        print("Google Sheets fetch warning, falling back to local Excel:", e)
+
+    # Local Excel Fallback
+    xl = pd.ExcelFile(EXCEL_PATH)
     df_pos_raw = xl.parse('Posiciones', header=None)
     subheaders = [str(x) if not pd.isna(x) else "" for x in df_pos_raw.iloc[3, 4:14].values]
     
@@ -79,7 +166,6 @@ def load_data():
     rake_dict = dict(zip(rake_cols, rake_vals))
     total_rake = sum(rake_vals)
     
-    # Updated distribution: 50% Campeonato, 40% Mesa Final, 10% Gastos Mesa Final
     camp_total = total_rake * 0.50
     mf_total = total_rake * 0.40
     gastos_mf = total_rake * 0.10
@@ -103,49 +189,49 @@ def load_data():
     }
 
 def save_data(df_posiciones, rake_dict, subheaders_list=None):
-    wb = openpyxl.load_workbook(EXCEL_PATH)
-    ws_pos = wb['Posiciones']
-    
-    if subheaders_list:
-        for c_idx, sub in enumerate(subheaders_list):
-            ws_pos.cell(row=4, column=5 + c_idx, value=sub if sub else None)
+    if os.path.exists(EXCEL_PATH):
+        wb = openpyxl.load_workbook(EXCEL_PATH)
+        ws_pos = wb['Posiciones']
+        
+        if subheaders_list:
+            for c_idx, sub in enumerate(subheaders_list):
+                ws_pos.cell(row=4, column=5 + c_idx, value=sub if sub else None)
+                
+        for r in range(5, 25):
+            ws_pos.cell(row=r, column=2, value=None)
+            ws_pos.cell(row=r, column=3, value=None)
+            for c in range(5, 15):
+                ws_pos.cell(row=r, column=c, value=None)
+            ws_pos.cell(row=r, column=15, value=None)
             
-    for r in range(5, 25):
-        ws_pos.cell(row=r, column=2, value=None)
-        ws_pos.cell(row=r, column=3, value=None)
-        for c in range(5, 15):
-            ws_pos.cell(row=r, column=c, value=None)
-        ws_pos.cell(row=r, column=15, value=None)
-        
-    for row_idx, p_data in enumerate(df_posiciones.to_dict('records')):
-        r_num = 5 + row_idx
-        ws_pos.cell(row=r_num, column=2, value=row_idx + 1)
-        ws_pos.cell(row=r_num, column=3, value=p_data['Jugador'])
-        
-        tot = 0
-        for c_idx, f_name in enumerate(FECHAS_STANDARD):
-            v = p_data.get(f_name, 0)
-            ws_pos.cell(row=r_num, column=5 + c_idx, value=int(v) if v > 0 else None)
-            tot += v
+        for row_idx, p_data in enumerate(df_posiciones.to_dict('records')):
+            r_num = 5 + row_idx
+            ws_pos.cell(row=r_num, column=2, value=row_idx + 1)
+            ws_pos.cell(row=r_num, column=3, value=p_data['Jugador'])
             
-        ws_pos.cell(row=r_num, column=15, value=tot)
+            tot = 0
+            for c_idx, f_name in enumerate(FECHAS_STANDARD):
+                v = p_data.get(f_name, 0)
+                ws_pos.cell(row=r_num, column=5 + c_idx, value=int(v) if v > 0 else None)
+                tot += v
+                
+            ws_pos.cell(row=r_num, column=15, value=tot)
+            
+        ws_rake = wb['rake']
+        total_r = 0
+        for c_idx, f_name in enumerate([f'F{i}' for i in range(1, 11)]):
+            val = rake_dict.get(f_name, 0)
+            ws_rake.cell(row=3, column=2 + c_idx, value=float(val) if val > 0 else None)
+            total_r += val
+        ws_rake.cell(row=3, column=12, value=total_r if total_r > 0 else None)
+        ws_pos.cell(row=3, column=17, value=total_r)
         
-    ws_rake = wb['rake']
-    total_r = 0
-    for c_idx, f_name in enumerate([f'F{i}' for i in range(1, 11)]):
-        val = rake_dict.get(f_name, 0)
-        ws_rake.cell(row=3, column=2 + c_idx, value=float(val) if val > 0 else None)
-        total_r += val
-    ws_rake.cell(row=3, column=12, value=total_r if total_r > 0 else None)
-    
-    ws_pos.cell(row=3, column=17, value=total_r)
-    
-    camp_tot = total_r * 0.50
-    mf_tot = total_r * 0.40
-    payout_dist = [(0.50, 0.50), (0.30, 0.30), (0.20, 0.20)]
-    for idx, (p_camp, p_mf) in enumerate(payout_dist):
-        ws_pos.cell(row=5 + idx, column=18, value=int(camp_tot * p_camp))
-        ws_pos.cell(row=5 + idx, column=19, value=int(mf_tot * p_mf))
-        
-    wb.save(EXCEL_PATH)
+        camp_tot = total_r * 0.50
+        mf_tot = total_r * 0.40
+        payout_dist = [(0.50, 0.50), (0.30, 0.30), (0.20, 0.20)]
+        for idx, (p_camp, p_mf) in enumerate(payout_dist):
+            ws_pos.cell(row=5 + idx, column=18, value=int(camp_tot * p_camp))
+            ws_pos.cell(row=5 + idx, column=19, value=int(mf_tot * p_mf))
+            
+        wb.save(EXCEL_PATH)
     return True
