@@ -32,10 +32,10 @@ ADMIN_PASSWORD = "admin123"
 if "is_admin" not in st.session_state:
     st.session_state["is_admin"] = False
 
-# Custom High-End Casino Velvet & Gold Theme
+# Custom High-End Casino Velvet & Gold Theme (Senior Accessible & Fixed Tab Buttons)
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@700;800&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
 
     .stApp {
         background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 45%, #070b14 100%) !important;
@@ -60,14 +60,14 @@ st.markdown("""
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         font-weight: 800;
-        font-size: 2.2rem;
+        font-size: 2.3rem;
         margin: 0 0 10px 0;
         letter-spacing: 2px;
         text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
     }
     .sub-title {
         color: #fbbf24;
-        font-size: 1.25rem;
+        font-size: 1.3rem;
         font-weight: 700;
         margin-top: 4px;
         letter-spacing: 1px;
@@ -89,14 +89,14 @@ st.markdown("""
         transform: translateY(-2px);
     }
     div[data-testid="stMetricLabel"] {
-        color: #94a3b8 !important;
-        font-size: 0.85rem !important;
+        color: #cbd5e1 !important;
+        font-size: 0.95rem !important;
         font-weight: 700 !important;
         text-transform: uppercase;
     }
     div[data-testid="stMetricValue"] {
         font-family: 'Outfit', sans-serif !important;
-        font-size: 1.6rem !important;
+        font-size: 1.7rem !important;
         background: linear-gradient(135deg, #ffffff 0%, #fbbf24 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -106,7 +106,7 @@ st.markdown("""
     /* Prize Breakdown Component */
     .prize-container {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
         gap: 16px;
         margin: 1rem 0 1.5rem 0;
     }
@@ -115,7 +115,7 @@ st.markdown("""
         border: 1px solid rgba(245, 158, 11, 0.4);
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
         border-radius: 14px;
-        padding: 16px;
+        padding: 18px;
         transition: all 0.3s ease;
     }
     .prize-card:hover {
@@ -125,14 +125,14 @@ st.markdown("""
     .prize-card-title {
         color: #facc15;
         font-weight: 800;
-        font-size: 0.95rem;
+        font-size: 1rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         margin-bottom: 4px;
     }
     .prize-card-total {
         font-family: 'Outfit', sans-serif;
-        font-size: 1.5rem;
+        font-size: 1.7rem;
         font-weight: 800;
         color: #ffffff;
         margin-bottom: 10px;
@@ -143,8 +143,8 @@ st.markdown("""
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 5px 0;
-        font-size: 0.9rem;
+        padding: 6px 0;
+        font-size: 1rem;
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
     .prize-row:last-child {
@@ -157,47 +157,53 @@ st.markdown("""
     .prize-row strong {
         color: #fbbf24;
         font-weight: 800;
-        font-size: 1rem;
+        font-size: 1.1rem;
     }
 
-    /* Fully Rounded Pill Tabs */
+    /* Fixed & Senior Accessible Tab Buttons */
     .stTabs [data-baseweb="tab-list"] {
         gap: 12px !important;
         background: transparent !important;
-        border-bottom: 2px solid rgba(245, 158, 11, 0.2) !important;
-        padding-bottom: 10px !important;
+        border-bottom: 2px solid rgba(245, 158, 11, 0.25) !important;
+        padding-bottom: 12px !important;
     }
     .stTabs [data-baseweb="tab"], .stTabs button[role="tab"] {
-        padding: 10px 24px !important;
-        background: rgba(30, 41, 59, 0.75) !important;
-        border-radius: 30px !important;
-        color: #cbd5e1 !important;
+        padding: 12px 26px !important;
+        background: rgba(30, 41, 59, 0.85) !important;
+        border-radius: 14px !important;
+        color: #e2e8f0 !important;
         font-weight: 700 !important;
-        font-size: 0.95rem !important;
-        border: 1px solid rgba(245, 158, 11, 0.25) !important;
+        font-size: 1.1rem !important;
+        border: 2px solid rgba(245, 158, 11, 0.3) !important;
         transition: all 0.25s ease !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+        margin-right: 4px !important;
     }
     .stTabs [data-baseweb="tab"]:hover, .stTabs button[role="tab"]:hover {
-        background: rgba(45, 60, 85, 0.9) !important;
+        background: rgba(45, 60, 85, 0.95) !important;
         color: #facc15 !important;
         border-color: #f59e0b !important;
+        transform: translateY(-2px) !important;
     }
     .stTabs [aria-selected="true"], .stTabs button[aria-selected="true"] {
         background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
         color: #0f172a !important;
         font-weight: 800 !important;
-        border-radius: 30px !important;
-        border-color: #fbbf24 !important;
-        box-shadow: 0 4px 15px rgba(245, 158, 11, 0.45) !important;
+        font-size: 1.15rem !important;
+        border-radius: 14px !important;
+        border: 2px solid #fbbf24 !important;
+        box-shadow: 0 6px 20px rgba(245, 158, 11, 0.45) !important;
     }
-    .stTabs [data-baseweb="tab-highlight"], div[data-baseweb="tab-highlight"] {
+    /* Hide red underline completely */
+    .stTabs [data-baseweb="tab-highlight"], 
+    div[data-baseweb="tab-highlight"], 
+    div[data-baseweb="tab-border"],
+    .stTabs [data-baseweb="tab-list"] > div:nth-child(2) {
         display: none !important;
+        visibility: hidden !important;
         height: 0px !important;
         background-color: transparent !important;
-    }
-    .stTabs [data-baseweb="tab-border"] {
-        display: none !important;
+        border: none !important;
     }
     
     /* Action Buttons */
@@ -205,10 +211,10 @@ st.markdown("""
         background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
         color: #0f172a !important;
         font-weight: 800 !important;
-        font-size: 1.05rem !important;
+        font-size: 1.1rem !important;
         border: none !important;
         border-radius: 12px !important;
-        padding: 0.75rem 1.5rem !important;
+        padding: 0.85rem 1.8rem !important;
         box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35) !important;
         letter-spacing: 0.5px;
     }
@@ -226,12 +232,55 @@ st.markdown("""
         box-shadow: 0 8px 25px rgba(0,0,0,0.5);
     }
 
+    /* Rake Chips Grid */
+    .rake-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        gap: 14px;
+        margin: 1rem 0 2rem 0;
+    }
+    .rake-chip {
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        border-radius: 12px;
+        padding: 14px 10px;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .rake-chip-active {
+        border: 2px solid #22c55e !important;
+        box-shadow: 0 0 15px rgba(34, 197, 94, 0.25) !important;
+    }
+    .rake-chip-title {
+        color: #94a3b8;
+        font-size: 0.9rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+    }
+    .rake-chip-val {
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: #facc15;
+    }
+    .rake-status-badge {
+        display: inline-block;
+        margin-top: 6px;
+        font-size: 0.75rem;
+        font-weight: 800;
+        padding: 2px 8px;
+        border-radius: 10px;
+    }
+    .status-ok { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid #22c55e; }
+    .status-wait { background: rgba(148, 163, 184, 0.1); color: #94a3b8; border: 1px solid #475569; }
+
     /* Calendar Styling */
     .cal-card {
         background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
         border: 1px solid rgba(245, 158, 11, 0.3);
         border-radius: 14px;
-        padding: 16px;
+        padding: 18px;
         margin-bottom: 12px;
         display: flex;
         justify-content: space-between;
@@ -249,13 +298,13 @@ st.markdown("""
     }
     .cal-num {
         font-family: 'Outfit', sans-serif;
-        font-size: 1.4rem;
+        font-size: 1.5rem;
         font-weight: 800;
         color: #facc15;
-        min-width: 90px;
+        min-width: 100px;
     }
     .cal-desc {
-        font-size: 1.1rem;
+        font-size: 1.15rem;
         font-weight: 700;
         color: #f8fafc;
     }
@@ -263,8 +312,8 @@ st.markdown("""
         background: #f59e0b;
         color: #0f172a;
         font-weight: 800;
-        font-size: 0.8rem;
-        padding: 4px 10px;
+        font-size: 0.85rem;
+        padding: 4px 12px;
         border-radius: 20px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -274,32 +323,33 @@ st.markdown("""
         background: linear-gradient(135deg, #1e1b4b 0%, rgba(180, 83, 9, 0.4) 100%) !important;
         border: 2px solid #fbbf24 !important;
         box-shadow: 0 8px 30px rgba(251, 191, 36, 0.35) !important;
-        padding: 20px !important;
+        padding: 22px !important;
         border-radius: 16px !important;
         text-align: center;
         margin-top: 20px;
     }
     .cal-final-title {
         font-family: 'Outfit', sans-serif;
-        font-size: 1.5rem;
+        font-size: 1.6rem;
         font-weight: 800;
         color: #fbbf24;
         margin-bottom: 6px;
         letter-spacing: 1px;
     }
     .cal-final-desc {
-        font-size: 1.25rem;
+        font-size: 1.3rem;
         font-weight: 700;
         color: #ffffff;
     }
 
     /* Mobile adjustments */
     @media (max-width: 768px) {
-        .main-title { font-size: 1.5rem; }
-        .sub-title { font-size: 1.05rem; }
-        div[data-testid="stMetricValue"] { font-size: 1.25rem !important; }
-        .stTabs [data-baseweb="tab"], .stTabs button[role="tab"] { padding: 8px 16px !important; font-size: 0.85rem !important; border-radius: 20px !important; }
+        .main-title { font-size: 1.6rem; }
+        .sub-title { font-size: 1.1rem; }
+        div[data-testid="stMetricValue"] { font-size: 1.4rem !important; }
+        .stTabs [data-baseweb="tab"], .stTabs button[role="tab"] { padding: 10px 18px !important; font-size: 0.95rem !important; border-radius: 12px !important; }
         .cal-card { flex-direction: column; align-items: flex-start; gap: 6px; }
+        .rake-chip-val { font-size: 1.15rem; }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -350,7 +400,7 @@ with c2:
 with c3:
     st.metric("🃏 Mesa Final (40%)", f"${int(mf_total):,}")
 with c4:
-    st.metric("Receipt Gastos MF (10%)", f"${int(gastos_mf):,}")
+    st.metric("🧾 Gastos MF (10%)", f"${int(gastos_mf):,}")
 
 # Prize Breakdown Cards (50% Campeonato, 40% Mesa Final, 10% Gastos MF)
 st.markdown(f"""
@@ -429,13 +479,42 @@ with tab1:
 
 with tab3:
     st.subheader("💵 Control de Rake por Fecha")
+    st.caption("Detalle del monto recaudado en cada fecha de la temporada.")
     
-    df_rake = pd.DataFrame([rake_dict])
-    st.dataframe(df_rake, use_container_width=True, hide_index=True)
+    # Rake Chips Grid
+    chips_html = '<div class="rake-grid">'
+    for i in range(1, 11):
+        f_key = f"F{i}"
+        val = rake_dict.get(f_key, 0)
+        is_active = val > 0
+        card_cls = "rake-chip rake-chip-active" if is_active else "rake-chip"
+        badge_cls = "rake-status-badge status-ok" if is_active else "rake-status-badge status-wait"
+        status_txt = "Recaudado" if is_active else "Pendiente"
+        val_txt = f"${int(val):,}" if is_active else "$0"
+        
+        chips_html += f"""
+        <div class="{card_cls}">
+            <div class="rake-chip-title">Fecha {i:02d}</div>
+            <div class="rake-chip-val">{val_txt}</div>
+            <div class="{badge_cls}">{status_txt}</div>
+        </div>
+        """
+    chips_html += '</div>'
+    st.markdown(chips_html, unsafe_allow_html=True)
     
-    st.subheader("🏆 Distribución de Pozos de Premios")
-    df_pay = pd.DataFrame(payouts)
-    st.dataframe(df_pay, use_container_width=True, hide_index=True)
+    st.write("---")
+    st.subheader("🏆 Tabla de Pozos de Premios")
+    
+    formatted_payouts = []
+    medals = ["🥇 1º Lugar", "🥈 2º Lugar", "🥉 3º Lugar"]
+    for idx, p in enumerate(payouts):
+        formatted_payouts.append({
+            "Posición": medals[idx] if idx < len(medals) else f"{p['Pos']}º Lugar",
+            "Pozo Campeonato (50%)": f"${int(p['Campeonato']):,}",
+            "Pozo Mesa Final (40%)": f"${int(p['Mesa Final']):,}"
+        })
+    df_pay_formatted = pd.DataFrame(formatted_payouts)
+    st.dataframe(df_pay_formatted, use_container_width=True, hide_index=True)
 
 with tab5:
     st.subheader("📅 Calendario Oficial de Fechas 2026 - 2027")
