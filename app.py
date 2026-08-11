@@ -400,7 +400,7 @@ with c2:
 with c3:
     st.metric("🃏 Mesa Final (40%)", f"${int(mf_total):,}")
 with c4:
-    st.metric("🧾 Gastos MF (10%)", f"${int(gastos_mf):,}")
+    st.metric("Receipt Gastos MF (10%)", f"${int(gastos_mf):,}")
 
 # Prize Breakdown Cards (50% Campeonato, 40% Mesa Final, 10% Gastos MF)
 st.markdown(f"""
@@ -481,7 +481,7 @@ with tab3:
     st.subheader("💵 Control de Rake por Fecha")
     st.caption("Detalle del monto recaudado en cada fecha de la temporada.")
     
-    # Rake Chips Grid
+    # Rake Chips Grid - Single Line HTML String (No Markdown Codeblock Trigger)
     chips_html = '<div class="rake-grid">'
     for i in range(1, 11):
         f_key = f"F{i}"
@@ -491,14 +491,7 @@ with tab3:
         badge_cls = "rake-status-badge status-ok" if is_active else "rake-status-badge status-wait"
         status_txt = "Recaudado" if is_active else "Pendiente"
         val_txt = f"${int(val):,}" if is_active else "$0"
-        
-        chips_html += f"""
-        <div class="{card_cls}">
-            <div class="rake-chip-title">Fecha {i:02d}</div>
-            <div class="rake-chip-val">{val_txt}</div>
-            <div class="{badge_cls}">{status_txt}</div>
-        </div>
-        """
+        chips_html += f'<div class="{card_cls}"><div class="rake-chip-title">Fecha {i:02d}</div><div class="rake-chip-val">{val_txt}</div><div class="{badge_cls}">{status_txt}</div></div>'
     chips_html += '</div>'
     st.markdown(chips_html, unsafe_allow_html=True)
     
