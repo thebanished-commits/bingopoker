@@ -32,7 +32,7 @@ ADMIN_PASSWORD = "admin123"
 if "is_admin" not in st.session_state:
     st.session_state["is_admin"] = False
 
-# Custom High-End Casino Velvet & Gold Theme (Senior Accessible & Fixed Tab Buttons)
+# Custom High-End Casino Velvet & Gold Theme
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
@@ -160,49 +160,52 @@ st.markdown("""
         font-size: 1.1rem;
     }
 
-    /* Fixed & Senior Accessible Tab Buttons */
+    /* Fixed & Rich Gold Metallic Tab Buttons */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 12px !important;
+        gap: 14px !important;
         background: transparent !important;
         border-bottom: 2px solid rgba(245, 158, 11, 0.25) !important;
         padding-bottom: 12px !important;
     }
     .stTabs [data-baseweb="tab"], .stTabs button[role="tab"] {
-        padding: 12px 26px !important;
-        background: rgba(30, 41, 59, 0.85) !important;
+        padding: 12px 28px !important;
+        background: rgba(15, 23, 42, 0.85) !important;
         border-radius: 14px !important;
-        color: #e2e8f0 !important;
+        color: #f8fafc !important;
         font-weight: 700 !important;
         font-size: 1.1rem !important;
-        border: 2px solid rgba(245, 158, 11, 0.3) !important;
+        border: 2px solid rgba(245, 158, 11, 0.4) !important;
         transition: all 0.25s ease !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
         margin-right: 4px !important;
     }
     .stTabs [data-baseweb="tab"]:hover, .stTabs button[role="tab"]:hover {
-        background: rgba(45, 60, 85, 0.95) !important;
+        background: rgba(30, 41, 59, 0.95) !important;
         color: #facc15 !important;
         border-color: #f59e0b !important;
         transform: translateY(-2px) !important;
     }
     .stTabs [aria-selected="true"], .stTabs button[aria-selected="true"] {
-        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
-        color: #0f172a !important;
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%) !important;
+        color: #ffffff !important;
         font-weight: 800 !important;
         font-size: 1.15rem !important;
         border-radius: 14px !important;
-        border: 2px solid #fbbf24 !important;
-        box-shadow: 0 6px 20px rgba(245, 158, 11, 0.45) !important;
+        border: 2px solid #fef08a !important;
+        box-shadow: 0 6px 22px rgba(245, 158, 11, 0.5) !important;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7) !important;
     }
-    /* Hide red underline completely */
+    /* Hide red underline completely across all browsers */
     .stTabs [data-baseweb="tab-highlight"], 
     div[data-baseweb="tab-highlight"], 
     div[data-baseweb="tab-border"],
-    .stTabs [data-baseweb="tab-list"] > div:nth-child(2) {
+    .stTabs [data-baseweb="tab-list"] > div:nth-child(2),
+    .stTabs [data-baseweb="tab-list"] > div[style*="background-color"] {
         display: none !important;
         visibility: hidden !important;
         height: 0px !important;
-        background-color: transparent !important;
+        opacity: 0 !important;
+        background: transparent !important;
         border: none !important;
     }
     
@@ -231,6 +234,56 @@ st.markdown("""
         border: 1px solid rgba(245, 158, 11, 0.3);
         box-shadow: 0 8px 25px rgba(0,0,0,0.5);
     }
+
+    /* Custom Visual Leaderboard Table Styling */
+    .leaderboard-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 8px;
+        margin: 1rem 0;
+    }
+    .leaderboard-table th {
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
+        color: #fbbf24;
+        font-weight: 800;
+        font-size: 0.95rem;
+        padding: 12px 10px;
+        text-align: center;
+        border-top: 1px solid rgba(245, 158, 11, 0.3);
+        border-bottom: 1px solid rgba(245, 158, 11, 0.3);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .leaderboard-table th:first-child { border-top-left-radius: 10px; border-bottom-left-radius: 10px; border-left: 1px solid rgba(245, 158, 11, 0.3); text-align: left; padding-left: 16px; }
+    .leaderboard-table th:last-child { border-top-right-radius: 10px; border-bottom-right-radius: 10px; border-right: 1px solid rgba(245, 158, 11, 0.3); }
+    
+    .leaderboard-row {
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+        border: 1px solid rgba(245, 158, 11, 0.2);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        transition: all 0.3s ease;
+    }
+    .leaderboard-row:hover {
+        border-color: #f59e0b;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(245, 158, 11, 0.2);
+    }
+    .leaderboard-row td {
+        padding: 12px 10px;
+        text-align: center;
+        font-size: 1rem;
+        color: #f8fafc;
+        font-weight: 600;
+    }
+    .leaderboard-row td:first-child { border-top-left-radius: 10px; border-bottom-left-radius: 10px; text-align: left; padding-left: 16px; font-weight: 800; }
+    .leaderboard-row td:last-child { border-top-right-radius: 10px; border-bottom-right-radius: 10px; font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 800; color: #facc15; }
+    
+    .rank-1 { background: linear-gradient(135deg, rgba(180, 83, 9, 0.35) 0%, rgba(30, 41, 59, 0.95) 100%) !important; border: 2px solid #f59e0b !important; }
+    .rank-2 { background: linear-gradient(135deg, rgba(100, 116, 139, 0.35) 0%, rgba(30, 41, 59, 0.95) 100%) !important; border: 1.5px solid #94a3b8 !important; }
+    .rank-3 { background: linear-gradient(135deg, rgba(180, 83, 9, 0.2) 0%, rgba(30, 41, 59, 0.95) 100%) !important; border: 1.5px solid #d97706 !important; }
+
+    .pts-active { color: #4ade80 !important; font-weight: 800 !important; }
+    .pts-zero { color: #64748b !important; opacity: 0.6; }
 
     /* Rake Chips Grid */
     .rake-grid {
@@ -350,6 +403,7 @@ st.markdown("""
         .stTabs [data-baseweb="tab"], .stTabs button[role="tab"] { padding: 10px 18px !important; font-size: 0.95rem !important; border-radius: 12px !important; }
         .cal-card { flex-direction: column; align-items: flex-start; gap: 6px; }
         .rake-chip-val { font-size: 1.15rem; }
+        .leaderboard-table th, .leaderboard-row td { padding: 8px 4px; font-size: 0.85rem; }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -438,22 +492,34 @@ else:
 
 with tab1:
     st.subheader("Tabla de Posiciones General")
+    st.caption("Puntaje acumulado fecha a fecha (10 Fechas Temporada 2026).")
     
-    fechas_cols = FECHAS_STANDARD
-    cols_display = ["Pos", "Jugador"] + fechas_cols + ["Total"]
+    # Custom Visual Casino Leaderboard Table
+    lead_html = '<table class="leaderboard-table"><thead><tr>'
+    lead_html += '<th>Jugador</th>'
+    for f in FECHAS_STANDARD:
+        lead_html += f'<th>{f}</th>'
+    lead_html += '<th>Total</th></tr></thead><tbody>'
     
-    df_show = df_pos.copy()
-    for col in fechas_cols:
-        if col in df_show.columns:
-            df_show[col] = df_show[col].apply(lambda x: int(x))
-    df_show["Total"] = df_show["Total"].apply(lambda x: int(x))
+    medals_map = {1: "🥇 1º", 2: "🥈 2º", 3: "🥉 3º"}
     
-    st.dataframe(
-        df_show[cols_display],
-        use_container_width=True,
-        hide_index=True,
-        height=340
-    )
+    for idx, row in df_pos.iterrows():
+        pos_num = idx + 1
+        row_cls = "leaderboard-row rank-1" if pos_num == 1 else ("leaderboard-row rank-2" if pos_num == 2 else ("leaderboard-row rank-3" if pos_num == 3 else "leaderboard-row"))
+        pos_badge = medals_map.get(pos_num, f"{pos_num}º")
+        
+        lead_html += f'<tr class="{row_cls}">'
+        lead_html += f'<td>{pos_badge} {row["Jugador"]}</td>'
+        
+        for f in FECHAS_STANDARD:
+            val = int(row.get(f, 0))
+            val_cls = "pts-active" if val > 0 else "pts-zero"
+            lead_html += f'<td class="{val_cls}">{val}</td>'
+            
+        lead_html += f'<td>{int(row["Total"])} pts</td></tr>'
+        
+    lead_html += '</tbody></table>'
+    st.markdown(lead_html, unsafe_allow_html=True)
     
     st.write("---")
     st.subheader("📸 Reporte para WhatsApp")
@@ -481,7 +547,6 @@ with tab3:
     st.subheader("💵 Control de Rake por Fecha")
     st.caption("Detalle del monto recaudado en cada fecha de la temporada.")
     
-    # Rake Chips Grid - Single Line HTML String (No Markdown Codeblock Trigger)
     chips_html = '<div class="rake-grid">'
     for i in range(1, 11):
         f_key = f"F{i}"
