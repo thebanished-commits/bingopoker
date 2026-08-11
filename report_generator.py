@@ -12,6 +12,12 @@ elif os.path.exists(ALT_LOGO_PATH):
 else:
     LOGO_PATH = None
 
+def fmt_money(val):
+    try:
+        return f"${int(val):,}".replace(",", ".")
+    except Exception:
+        return "$0"
+
 def get_font(size, bold=False):
     font_names = ["arialbd.ttf" if bold else "arial.ttf", 
                   "segoeui.ttf", "tahoma.ttf"]
@@ -26,7 +32,16 @@ def generate_report_image(data):
     df_pos = data["df_posiciones"]
     subheaders = data.get("subheaders", ["FR"] + [""] * 9)
     total_rake = data["total_rake"]
-    payouts = data["payouts"]
+    
+    # 50% Campeonato, 40% Mesa Final
+    camp_total = total_rake * 0.50
+    mf_total = total_rake * 0.40
+    
+    payouts = [
+        {"Pos": 1, "Campeonato": int(camp_total * 0.50), "Mesa Final": int(mf_total * 0.50)},
+        {"Pos": 2, "Campeonato": int(camp_total * 0.30), "Mesa Final": int(mf_total * 0.30)},
+        {"Pos": 3, "Campeonato": int(camp_total * 0.20), "Mesa Final": int(mf_total * 0.20)},
+    ]
     
     S = 2
     
@@ -159,7 +174,7 @@ def generate_report_image(data):
     
     y_side += row_h_hdr1
     draw.rectangle([x_side, y_side, x_side + side_w, y_side + row_h_data], fill=WHITE, outline=GRID_COLOR, width=S)
-    val_str = str(int(total_rake))
+    val_str = fmt_money(total_rake)
     bbox = draw.textbbox((0, 0), val_str, font=f_cell)
     tw = bbox[2] - bbox[0]
     draw.text((x_side + (side_w - tw)/2, y_side + 4*S), val_str, fill=BLACK, font=f_cell)
@@ -182,8 +197,8 @@ def generate_report_image(data):
     
     for pay in payouts:
         pos_num = str(pay["Pos"])
-        c_amt = str(int(pay["Campeonato"]))
-        m_amt = str(int(pay["Mesa Final"]))
+        c_amt = fmt_money(pay["Campeonato"])
+        m_amt = fmt_money(pay["Mesa Final"])
         
         draw.rectangle([x_side, y_side, x_side + w_p_pos, y_side + row_h_data], fill=LIGHT_BLUE, outline=GRID_COLOR, width=S)
         draw.rectangle([x_side + w_p_pos, y_side, x_side + side_w, y_side + row_h_data], fill=WHITE, outline=GRID_COLOR, width=S)

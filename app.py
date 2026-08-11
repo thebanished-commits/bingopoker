@@ -14,6 +14,12 @@ st.set_page_config(
 
 FECHAS_STANDARD = [f"{i:02d}" for i in range(1, 11)]
 
+def fmt_money(val):
+    try:
+        return f"${int(val):,}".replace(",", ".")
+    except Exception:
+        return "$0"
+
 def get_logo_b64():
     p_small = os.path.join(os.path.dirname(__file__), 'assets', 'logo_small.png')
     p_main = os.path.join(os.path.dirname(__file__), 'assets', 'logo.png')
@@ -32,7 +38,7 @@ ADMIN_PASSWORD = "admin123"
 if "is_admin" not in st.session_state:
     st.session_state["is_admin"] = False
 
-# Custom High-End Casino Velvet & Gold Theme (Compact & Responsive Header)
+# Custom High-End Casino Velvet & Gold Theme (Spanish Currency Formatting)
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
@@ -425,7 +431,7 @@ else:
         st.session_state["is_admin"] = False
         st.rerun()
 
-# Unified Compact Header Banner: Optimized Logo Sizing (85px on Desktop, 75px on Mobile)
+# Unified Compact Header Banner
 logo_html = f'<img src="data:image/png;base64,{logo_b64}" style="max-width:85px !important; width:85px !important; height:auto !important; display:block; margin:4px auto 6px auto; filter:drop-shadow(0 0 10px rgba(245,158,11,0.4));" alt="Logo">' if logo_b64 else ''
 
 st.markdown(f"""
@@ -446,37 +452,37 @@ gastos_mf = data.get("gastos_mf", total_rake * 0.10)
 payouts = data["payouts"]
 subheaders = data["subheaders"]
 
-# Top Metrics Row (4 Metrics: Total Rake, 50% Campeonato, 40% Mesa Final, 10% Gastos)
+# Top Metrics Row with Spanish Dot Formatting
 c1, c2, c3, c4 = st.columns(4)
 with c1:
-    st.metric("💰 Rake Total", f"${int(total_rake):,}")
+    st.metric("💰 Rake Total", fmt_money(total_rake))
 with c2:
-    st.metric("🏆 Campeonato (50%)", f"${int(camp_total):,}")
+    st.metric("🏆 Campeonato (50%)", fmt_money(camp_total))
 with c3:
-    st.metric("🃏 Mesa Final (40%)", f"${int(mf_total):,}")
+    st.metric("🃏 Mesa Final (40%)", fmt_money(mf_total))
 with c4:
-    st.metric("🧾 Gastos MF (10%)", f"${int(gastos_mf):,}")
+    st.metric("🧾 Gastos MF (10%)", fmt_money(gastos_mf))
 
-# Prize Breakdown Cards (50% Campeonato, 40% Mesa Final, 10% Gastos MF)
+# Prize Breakdown Cards with Spanish Dot Formatting
 st.markdown(f"""
 <div class="prize-container">
     <div class="prize-card">
         <div class="prize-card-title">🏆 PREMIOS CAMPEONATO (50%)</div>
-        <div class="prize-card-total">${int(camp_total):,}</div>
-        <div class="prize-row"><span>🥇 1º Lugar (50%)</span><strong>${int(camp_total * 0.50):,}</strong></div>
-        <div class="prize-row"><span>🥈 2º Lugar (30%)</span><strong>${int(camp_total * 0.30):,}</strong></div>
-        <div class="prize-row"><span>🥉 3º Lugar (20%)</span><strong>${int(camp_total * 0.20):,}</strong></div>
+        <div class="prize-card-total">{fmt_money(camp_total)}</div>
+        <div class="prize-row"><span>🥇 1º Lugar (50%)</span><strong>{fmt_money(camp_total * 0.50)}</strong></div>
+        <div class="prize-row"><span>🥈 2º Lugar (30%)</span><strong>{fmt_money(camp_total * 0.30)}</strong></div>
+        <div class="prize-row"><span>🥉 3º Lugar (20%)</span><strong>{fmt_money(camp_total * 0.20)}</strong></div>
     </div>
     <div class="prize-card">
         <div class="prize-card-title">🃏 PREMIOS MESA FINAL (40%)</div>
-        <div class="prize-card-total">${int(mf_total):,}</div>
-        <div class="prize-row"><span>🥇 1º Lugar (50%)</span><strong>${int(mf_total * 0.50):,}</strong></div>
-        <div class="prize-row"><span>🥈 2º Lugar (30%)</span><strong>${int(mf_total * 0.30):,}</strong></div>
-        <div class="prize-row"><span>🥉 3º Lugar (20%)</span><strong>${int(mf_total * 0.20):,}</strong></div>
+        <div class="prize-card-total">{fmt_money(mf_total)}</div>
+        <div class="prize-row"><span>🥇 1º Lugar (50%)</span><strong>{fmt_money(mf_total * 0.50)}</strong></div>
+        <div class="prize-row"><span>🥈 2º Lugar (30%)</span><strong>{fmt_money(mf_total * 0.30)}</strong></div>
+        <div class="prize-row"><span>🥉 3º Lugar (20%)</span><strong>{fmt_money(mf_total * 0.20)}</strong></div>
     </div>
     <div class="prize-card">
         <div class="prize-card-title">🧾 GASTOS MESA FINAL (10%)</div>
-        <div class="prize-card-total">${int(gastos_mf):,}</div>
+        <div class="prize-card-total">{fmt_money(gastos_mf)}</div>
         <div class="prize-row"><span>Fondo de Gastos Organización</span><strong>10% Rake</strong></div>
         <div class="prize-row"><span>Mantenimiento & Logística</span><strong>Acumulado</strong></div>
     </div>
@@ -556,7 +562,7 @@ with tab3:
         card_cls = "rake-chip rake-chip-active" if is_active else "rake-chip"
         badge_cls = "rake-status-badge status-ok" if is_active else "rake-status-badge status-wait"
         status_txt = "Recaudado" if is_active else "Pendiente"
-        val_txt = f"${int(val):,}" if is_active else "$0"
+        val_txt = fmt_money(val) if is_active else "$0"
         chips_html += f'<div class="{card_cls}"><div class="rake-chip-title">Fecha {i:02d}</div><div class="rake-chip-val">{val_txt}</div><div class="{badge_cls}">{status_txt}</div></div>'
     chips_html += '</div>'
     st.markdown(chips_html, unsafe_allow_html=True)
@@ -569,8 +575,8 @@ with tab3:
     for idx, p in enumerate(payouts):
         formatted_payouts.append({
             "Posición": medals[idx] if idx < len(medals) else f"{p['Pos']}º Lugar",
-            "Pozo Campeonato (50%)": f"${int(p['Campeonato']):,}",
-            "Pozo Mesa Final (40%)": f"${int(p['Mesa Final']):,}"
+            "Pozo Campeonato (50%)": fmt_money(p['Campeonato']),
+            "Pozo Mesa Final (40%)": fmt_money(p['Mesa Final'])
         })
     df_pay_formatted = pd.DataFrame(formatted_payouts)
     st.dataframe(df_pay_formatted, use_container_width=True, hide_index=True)
