@@ -41,10 +41,10 @@ def create_backup():
 def load_data():
     create_backup()
     
-    # Attempt loading from Google Sheets Cloud CSV first
+    # Attempt loading from Google Sheets Cloud CSV with generous 15s timeout
     try:
-        res_pos = requests.get(URL_POS_CSV, timeout=5)
-        res_rake = requests.get(URL_RAKE_CSV, timeout=5)
+        res_pos = requests.get(URL_POS_CSV, timeout=15)
+        res_rake = requests.get(URL_RAKE_CSV, timeout=15)
         
         if res_pos.status_code == 200 and res_rake.status_code == 200:
             df_raw = pd.read_csv(io.StringIO(res_pos.text), header=None)
