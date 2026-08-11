@@ -32,7 +32,7 @@ ADMIN_PASSWORD = "admin123"
 if "is_admin" not in st.session_state:
     st.session_state["is_admin"] = False
 
-# Custom High-End Casino Velvet & Gold Theme with Fixed Inline Responsive Image Controls
+# Custom High-End Casino Velvet & Gold Theme
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@700;800&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap');
@@ -160,7 +160,7 @@ st.markdown("""
         font-size: 1rem;
     }
 
-    /* Fully Rounded Pill Tabs (Smooth Rounded Corners) */
+    /* Fully Rounded Pill Tabs */
     .stTabs [data-baseweb="tab-list"] {
         gap: 12px !important;
         background: transparent !important;
@@ -191,7 +191,6 @@ st.markdown("""
         border-color: #fbbf24 !important;
         box-shadow: 0 4px 15px rgba(245, 158, 11, 0.45) !important;
     }
-    /* Hide red underline completely */
     .stTabs [data-baseweb="tab-highlight"], div[data-baseweb="tab-highlight"] {
         display: none !important;
         height: 0px !important;
@@ -201,7 +200,7 @@ st.markdown("""
         display: none !important;
     }
     
-    /* Action Buttons (Gold Metallic) */
+    /* Action Buttons */
     .stButton>button {
         background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
         color: #0f172a !important;
@@ -227,12 +226,80 @@ st.markdown("""
         box-shadow: 0 8px 25px rgba(0,0,0,0.5);
     }
 
+    /* Calendar Styling */
+    .cal-card {
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        border-radius: 14px;
+        padding: 16px;
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.3s ease;
+    }
+    .cal-card:hover {
+        border-color: #f59e0b;
+        box-shadow: 0 4px 20px rgba(245, 158, 11, 0.25);
+    }
+    .cal-next {
+        border: 2px solid #f59e0b !important;
+        background: linear-gradient(135deg, rgba(180, 83, 9, 0.25) 0%, rgba(30, 41, 59, 0.95) 100%) !important;
+        box-shadow: 0 0 20px rgba(245, 158, 11, 0.3) !important;
+    }
+    .cal-num {
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: #facc15;
+        min-width: 90px;
+    }
+    .cal-desc {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #f8fafc;
+    }
+    .cal-badge {
+        background: #f59e0b;
+        color: #0f172a;
+        font-weight: 800;
+        font-size: 0.8rem;
+        padding: 4px 10px;
+        border-radius: 20px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-left: 10px;
+    }
+    .cal-final {
+        background: linear-gradient(135deg, #1e1b4b 0%, rgba(180, 83, 9, 0.4) 100%) !important;
+        border: 2px solid #fbbf24 !important;
+        box-shadow: 0 8px 30px rgba(251, 191, 36, 0.35) !important;
+        padding: 20px !important;
+        border-radius: 16px !important;
+        text-align: center;
+        margin-top: 20px;
+    }
+    .cal-final-title {
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #fbbf24;
+        margin-bottom: 6px;
+        letter-spacing: 1px;
+    }
+    .cal-final-desc {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #ffffff;
+    }
+
     /* Mobile adjustments */
     @media (max-width: 768px) {
         .main-title { font-size: 1.5rem; }
         .sub-title { font-size: 1.05rem; }
         div[data-testid="stMetricValue"] { font-size: 1.25rem !important; }
         .stTabs [data-baseweb="tab"], .stTabs button[role="tab"] { padding: 8px 16px !important; font-size: 0.85rem !important; border-radius: 20px !important; }
+        .cal-card { flex-direction: column; align-items: flex-start; gap: 6px; }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -314,11 +381,10 @@ st.markdown(f"""
 st.write("---")
 
 if st.session_state["is_admin"]:
-    tab1, tab2, tab3, tab4 = st.tabs(["🏆 Posiciones", "📝 Registrar Fecha (Admin)", "💵 Rake & Pozos", "⚙️ Jugadores (Admin)"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["🏆 Posiciones", "📝 Registrar Fecha (Admin)", "💵 Rake & Pozos", "⚙️ Jugadores (Admin)", "📅 Calendario"])
 else:
-    tab1, tab3 = st.tabs(["🏆 Posiciones", "💵 Rake & Pozos"])
+    tab1, tab3, tab5 = st.tabs(["🏆 Posiciones", "💵 Rake & Pozos", "📅 Calendario"])
     tab2, tab4 = None, None
-    st.info("ℹ️ Estás en **Modo Visualización (Lectura)**. Para agregar resultados o administrar la liga, abre el menú lateral e ingresa con la clave de administrador.")
 
 with tab1:
     st.subheader("Tabla de Posiciones General")
@@ -370,6 +436,38 @@ with tab3:
     st.subheader("🏆 Distribución de Pozos de Premios")
     df_pay = pd.DataFrame(payouts)
     st.dataframe(df_pay, use_container_width=True, hide_index=True)
+
+with tab5:
+    st.subheader("📅 Calendario Oficial de Fechas 2026 - 2027")
+    st.caption("Programación de las fechas de la temporada y el Gran Evento Final.")
+    
+    schedule_data = [
+        {"fecha": "Fecha 3", "mes": "Agosto", "desc": "Jueves 20 de agosto de 2026", "next": True},
+        {"fecha": "Fecha 4", "mes": "Septiembre", "desc": "Jueves 3 de septiembre de 2026", "next": False},
+        {"fecha": "Fecha 5", "mes": "Octubre", "desc": "Jueves 1 de octubre de 2026", "next": False},
+        {"fecha": "Fecha 6", "mes": "Octubre", "desc": "Jueves 15 de octubre de 2026", "next": False},
+        {"fecha": "Fecha 7", "mes": "Noviembre", "desc": "Jueves 5 de noviembre de 2026", "next": False},
+        {"fecha": "Fecha 8", "mes": "Noviembre", "desc": "Jueves 19 de noviembre de 2026", "next": False},
+        {"fecha": "Fecha 9", "mes": "Diciembre", "desc": "Jueves 3 de diciembre de 2026", "next": False},
+        {"fecha": "Fecha 10", "mes": "Diciembre", "desc": "Jueves 17 de diciembre de 2026", "next": False},
+    ]
+    
+    for s in schedule_data:
+        card_class = "cal-card cal-next" if s["next"] else "cal-card"
+        badge_html = '<span class="cal-badge">🔥 Próximo Torneo</span>' if s["next"] else ''
+        st.markdown(f"""
+        <div class="{card_class}">
+            <div class="cal-num">{s['fecha']} {badge_html}</div>
+            <div class="cal-desc">🗓️ {s['desc']}</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    st.markdown("""
+    <div class="cal-final">
+        <div class="cal-final-title">🏆 GRAN EVENTO MESA FINAL</div>
+        <div class="cal-final-desc">Sábado 09 de Enero 2027 desde las 14:00 hrs</div>
+    </div>
+    """, unsafe_allow_html=True)
 
 if st.session_state["is_admin"] and tab2:
     with tab2:
