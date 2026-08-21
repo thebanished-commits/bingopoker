@@ -460,7 +460,10 @@ if st.session_state["is_admin"] and tab2:
             sub_code = "ME-" + sub_code
         current_rake = rake_dict.get(f"F{int(fecha_num)}", 0)
         new_rake = st.number_input(f"Rake Recaudado en Fecha {fecha_num} ($)", min_value=0, value=int(current_rake), step=1000)
-        
+
+        with st.expander("🔍 Debug — Jugadores cargados desde Google Sheets"):
+            st.write(df_pos["Jugador"].tolist())
+
         all_players = df_pos["Jugador"].tolist()
         NA = "-- Seleccionar --"
 
