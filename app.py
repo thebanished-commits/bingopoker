@@ -460,29 +460,50 @@ if st.session_state["is_admin"] and tab2:
             sub_code = "ME-" + sub_code
         current_rake = rake_dict.get(f"F{int(fecha_num)}", 0)
         new_rake = st.number_input(f"Rake Recaudado en Fecha {fecha_num} ($)", min_value=0, value=int(current_rake), step=1000)
-        st.write("#### Asignación de Posiciones (1° al 5° lugar)")
+        
         all_players = df_pos["Jugador"].tolist()
         NA = "-- Seleccionar --"
 
-        # Inicializar estado de selecciones si no existe
+        # ── Auto-reset selecciones al cambiar de fecha ──────────────────────
+        last_fecha_key = "reg_last_fecha"
+        if st.session_state.get(last_fecha_key) != fecha_num:
+            # La fecha cambió → limpiar todas las posiciones anteriores
+            for prev_r in range(1, 6):
+                for prev_f in FECHAS_STANDARD:
+                    k = f"reg_pos{prev_r}_{prev_f}"
+                    if k in st.session_state:
+                        del st.session_state[k]
+            st.session_state[last_fecha_key] = fecha_num
+
+        # Inicializar claves si no existen
         for r in range(1, 6):
             key = f"reg_pos{r}_{fecha_num}"
             if key not in st.session_state:
                 st.session_state[key] = NA
 
-        # Construir dropdowns en cascada: cada uno excluye los ya elegidos antes
+        # Botón limpiar manual
+        col_lbl, col_btn = st.columns([3, 1])
+        with col_lbl:
+            st.write("#### Asignación de Posiciones (1° al 5° lugar)")
+        with col_btn:
+            if st.button("🔄 Limpiar", help="Borra todas las selecciones"):
+                for r in range(1, 6):
+                    k = f"reg_pos{r}_{fecha_num}"
+                    if k in st.session_state:
+                        del st.session_state[k]
+                st.rerun()
+
+        # Dropdowns en cascada: cada uno excluye los ya elegidos antes
         selections = []
         labels = ["🥇 1er Lugar", "🥈 2do Lugar", "🥉 3er Lugar", "4to Lugar", "5to Lugar"]
         for r in range(1, 6):
             key = f"reg_pos{r}_{fecha_num}"
-            # Jugadores ya elegidos en posiciones anteriores (excluir NA)
-            already_picked = {st.session_state[f"reg_pos{prev}_{fecha_num}"]
-                              for prev in range(1, r)
-                              if st.session_state.get(f"reg_pos{prev}_{fecha_num}", NA) != NA}
+            already_picked = {
+                st.session_state[f"reg_pos{prev}_{fecha_num}"]
+                for prev in range(1, r)
+                if st.session_state.get(f"reg_pos{prev}_{fecha_num}", NA) != NA
+            }
             available = [NA] + [p for p in all_players if p not in already_picked]
-            # Si el valor actual ya no está disponible, resetear
-            if st.session_state[key] not in available:
-                st.session_state[key] = NA
             sel = st.selectbox(labels[r-1], options=available,
                                key=key, index=available.index(st.session_state[key]))
             selections.append(sel)
