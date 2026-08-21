@@ -266,14 +266,13 @@ def save_data(df_posiciones, rake_dict, subheaders_list=None):
             "subheaders": subheaders_list or []
         }
 
-        # Google Apps Script redirige POST → hay que seguir el redirect manualmente
-        # Si usamos allow_redirects=True, Python convierte POST en GET y doPost nunca se ejecuta
-        resp = requests.post(APPS_SCRIPT_URL, json=payload, timeout=20, allow_redirects=False)
+        import json as _json, urllib.parse as _up
 
-        # Seguir redirect manualmente manteniendo POST
-        if resp.status_code in (301, 302, 307, 308):
-            redirect_url = resp.headers.get("Location", APPS_SCRIPT_URL)
-            resp = requests.post(redirect_url, json=payload, timeout=20, allow_redirects=False)
+        # Apps Script redirige POST a una URL que devuelve 405.
+        # GET sigue el redirect correctamente → enviamos el payload como parámetro URL.
+        payload_str = _json.dumps(payload, ensure_ascii=False)
+        get_url = f"{APPS_SCRIPT_URL}?payload={_up.quote(payload_str)}"
+        resp = requests.get(get_url, timeout=30)
 
         if resp.status_code == 200:
             try:
@@ -283,8 +282,7 @@ def save_data(df_posiciones, rake_dict, subheaders_list=None):
                 else:
                     error_msg = f"Apps Script error: {body.get('msg', 'desconocido')}"
             except Exception:
-                # Respuesta 200 pero no JSON → igual se guardó
-                success_sheets = True
+                success_sheets = True  # 200 sin JSON → igual guardó
         else:
             error_msg = f"Apps Script respondió con código {resp.status_code}: {resp.text[:300]}"
     except Exception as e:
