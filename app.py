@@ -486,9 +486,13 @@ if st.session_state["is_admin"] and tab2:
             if f_index < len(subheaders):
                 subheaders[f_index] = sub_code
             rake_dict[f"F{int(fecha_num)}"] = new_rake
-            data_manager.save_data(df_pos, rake_dict, subheaders)
-            st.success(f"¡Fecha {fecha_num} guardada exitosamente!")
-            st.rerun()
+            ok, err = data_manager.save_data(df_pos, rake_dict, subheaders)
+            if ok:
+                st.success(f"✅ ¡Fecha {fecha_num} guardada exitosamente en Google Sheets!")
+                st.rerun()
+            else:
+                st.error(f"❌ Error al guardar: {err}")
+                st.warning("Revisa que el Apps Script esté publicado correctamente (ver instrucciones del Admin).")
 
 # ─── TAB 4: JUGADORES (ADMIN) ───────────────────────────────────────────────
 if st.session_state["is_admin"] and tab4:
@@ -503,9 +507,12 @@ if st.session_state["is_admin"] and tab4:
                     for f in FECHAS_STANDARD:
                         new_row[f] = 0
                     df_pos = pd.concat([df_pos, pd.DataFrame([new_row])], ignore_index=True)
-                    data_manager.save_data(df_pos, rake_dict, subheaders)
-                    st.success(f"Jugador '{p_clean}' agregado con éxito.")
-                    st.rerun()
+                    ok, err = data_manager.save_data(df_pos, rake_dict, subheaders)
+                    if ok:
+                        st.success(f"✅ Jugador '{p_clean}' agregado con éxito.")
+                        st.rerun()
+                    else:
+                        st.error(f"❌ Error al guardar jugador: {err}")
                 else:
                     st.warning("El jugador ya existe.")
 
