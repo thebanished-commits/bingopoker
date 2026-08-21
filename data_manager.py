@@ -236,50 +236,91 @@ def load_data():
         "evento_final": evento_final
     }
 
+APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzVOT95SPKWcWP0kyFSDissECcWkXzl3O_YTsbdpmjFa8AYoDd3qigw6Dbma8cX4onnog/exec"
+
 def save_data(df_posiciones, rake_dict, subheaders_list=None):
+    """
+    Saves data to Google Sheets via Apps Script webhook (primary, works on cloud)
+    and to local Excel as secondary (only when file exists locally).
+    """
+    success_sheets = False
+    error_msg = None
+
+    # --- PRIMARY: Google Sheets via Apps Script webhook ---
+    try:
+        players_payload = []
+        for p_data in df_posiciones.to_dict('records'):
+            fechas_pts = {f: int(p_data.get(f, 0)) for f in FECHAS_STANDARD}
+            players_payload.append({
+                "jugador": p_data['Jugador'],
+                "puntos": fechas_pts,
+                "total": int(p_data.get('Total', sum(fechas_pts.values())))
+            })
+
+        rake_payload = {f"F{i}": float(rake_dict.get(f"F{i}", 0)) for i in range(1, 11)}
+
+        payload = {
+            "action": "save",
+            "posiciones": players_payload,
+            "rake": rake_payload,
+            "subheaders": subheaders_list or []
+        }
+
+        resp = requests.post(APPS_SCRIPT_URL, json=payload, timeout=20)
+        if resp.status_code == 200:
+            success_sheets = True
+        else:
+            error_msg = f"Apps Script respondió con código {resp.status_code}: {resp.text[:200]}"
+    except Exception as e:
+        error_msg = f"Error al conectar con Google Sheets: {e}"
+
+    # --- SECONDARY: Local Excel (only when running locally) ---
     if os.path.exists(EXCEL_PATH):
-        wb = openpyxl.load_workbook(EXCEL_PATH)
-        ws_pos = wb['Posiciones']
-        
-        if subheaders_list:
-            for c_idx, sub in enumerate(subheaders_list):
-                ws_pos.cell(row=4, column=5 + c_idx, value=sub if sub else None)
-                
-        for r in range(5, 25):
-            ws_pos.cell(row=r, column=2, value=None)
-            ws_pos.cell(row=r, column=3, value=None)
-            for c in range(5, 15):
-                ws_pos.cell(row=r, column=c, value=None)
-            ws_pos.cell(row=r, column=15, value=None)
-            
-        for row_idx, p_data in enumerate(df_posiciones.to_dict('records')):
-            r_num = 5 + row_idx
-            ws_pos.cell(row=r_num, column=2, value=row_idx + 1)
-            ws_pos.cell(row=r_num, column=3, value=p_data['Jugador'])
-            
-            tot = 0
-            for c_idx, f_name in enumerate(FECHAS_STANDARD):
-                v = p_data.get(f_name, 0)
-                ws_pos.cell(row=r_num, column=5 + c_idx, value=int(v) if v > 0 else None)
-                tot += v
-                
-            ws_pos.cell(row=r_num, column=15, value=tot)
-            
-        ws_rake = wb['rake']
-        total_r = 0
-        for c_idx, f_name in enumerate([f'F{i}' for i in range(1, 11)]):
-            val = rake_dict.get(f_name, 0)
-            ws_rake.cell(row=3, column=2 + c_idx, value=float(val) if val > 0 else None)
-            total_r += val
-        ws_rake.cell(row=3, column=12, value=total_r if total_r > 0 else None)
-        ws_pos.cell(row=3, column=17, value=total_r)
-        
-        camp_tot = total_r * 0.50
-        mf_tot = total_r * 0.40
-        payout_dist = [(0.50, 0.50), (0.30, 0.30), (0.20, 0.20)]
-        for idx, (p_camp, p_mf) in enumerate(payout_dist):
-            ws_pos.cell(row=5 + idx, column=18, value=int(camp_tot * p_camp))
-            ws_pos.cell(row=5 + idx, column=19, value=int(mf_tot * p_mf))
-            
-        wb.save(EXCEL_PATH)
-    return True
+        try:
+            wb = openpyxl.load_workbook(EXCEL_PATH)
+            ws_pos = wb['Posiciones']
+
+            if subheaders_list:
+                for c_idx, sub in enumerate(subheaders_list):
+                    ws_pos.cell(row=4, column=5 + c_idx, value=sub if sub else None)
+
+            for r in range(5, 25):
+                ws_pos.cell(row=r, column=2, value=None)
+                ws_pos.cell(row=r, column=3, value=None)
+                for c in range(5, 15):
+                    ws_pos.cell(row=r, column=c, value=None)
+                ws_pos.cell(row=r, column=15, value=None)
+
+            for row_idx, p_data in enumerate(df_posiciones.to_dict('records')):
+                r_num = 5 + row_idx
+                ws_pos.cell(row=r_num, column=2, value=row_idx + 1)
+                ws_pos.cell(row=r_num, column=3, value=p_data['Jugador'])
+                tot = 0
+                for c_idx, f_name in enumerate(FECHAS_STANDARD):
+                    v = p_data.get(f_name, 0)
+                    ws_pos.cell(row=r_num, column=5 + c_idx, value=int(v) if v > 0 else None)
+                    tot += v
+                ws_pos.cell(row=r_num, column=15, value=tot)
+
+            ws_rake = wb['rake']
+            total_r = 0
+            for c_idx, f_name in enumerate([f'F{i}' for i in range(1, 11)]):
+                val = rake_dict.get(f_name, 0)
+                ws_rake.cell(row=3, column=2 + c_idx, value=float(val) if val > 0 else None)
+                total_r += val
+            ws_rake.cell(row=3, column=12, value=total_r if total_r > 0 else None)
+            ws_pos.cell(row=3, column=17, value=total_r)
+
+            camp_tot = total_r * 0.50
+            mf_tot = total_r * 0.40
+            payout_dist = [(0.50, 0.50), (0.30, 0.30), (0.20, 0.20)]
+            for idx, (p_camp, p_mf) in enumerate(payout_dist):
+                ws_pos.cell(row=5 + idx, column=18, value=int(camp_tot * p_camp))
+                ws_pos.cell(row=5 + idx, column=19, value=int(mf_tot * p_mf))
+
+            wb.save(EXCEL_PATH)
+        except Exception as e:
+            print("Local Excel save warning:", e)
+
+    # Return result tuple: (success, error_message)
+    return success_sheets, error_msg
