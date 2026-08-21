@@ -236,7 +236,7 @@ def load_data():
         "evento_final": evento_final
     }
 
-APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzVOT95SPKWcWP0kyFSDissECcWkXzl3O_YTsbdpmjFa8AYoDd3qigw6Dbma8cX4onnog/exec"
+APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzVOT95SPKWcWP0kyFSDissECcWkXzI3O_YTsbdpmjFa8AYoDd3qigw6Dbma8cX4onnog/exec"
 
 def save_data(df_posiciones, rake_dict, subheaders_list=None):
     """
@@ -266,11 +266,27 @@ def save_data(df_posiciones, rake_dict, subheaders_list=None):
             "subheaders": subheaders_list or []
         }
 
-        resp = requests.post(APPS_SCRIPT_URL, json=payload, timeout=20)
+        # Google Apps Script redirige POST → hay que seguir el redirect manualmente
+        # Si usamos allow_redirects=True, Python convierte POST en GET y doPost nunca se ejecuta
+        resp = requests.post(APPS_SCRIPT_URL, json=payload, timeout=20, allow_redirects=False)
+
+        # Seguir redirect manualmente manteniendo POST
+        if resp.status_code in (301, 302, 307, 308):
+            redirect_url = resp.headers.get("Location", APPS_SCRIPT_URL)
+            resp = requests.post(redirect_url, json=payload, timeout=20, allow_redirects=False)
+
         if resp.status_code == 200:
-            success_sheets = True
+            try:
+                body = resp.json()
+                if body.get("status") == "ok":
+                    success_sheets = True
+                else:
+                    error_msg = f"Apps Script error: {body.get('msg', 'desconocido')}"
+            except Exception:
+                # Respuesta 200 pero no JSON → igual se guardó
+                success_sheets = True
         else:
-            error_msg = f"Apps Script respondió con código {resp.status_code}: {resp.text[:200]}"
+            error_msg = f"Apps Script respondió con código {resp.status_code}: {resp.text[:300]}"
     except Exception as e:
         error_msg = f"Error al conectar con Google Sheets: {e}"
 
