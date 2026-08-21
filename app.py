@@ -462,19 +462,37 @@ if st.session_state["is_admin"] and tab2:
         new_rake = st.number_input(f"Rake Recaudado en Fecha {fecha_num} ($)", min_value=0, value=int(current_rake), step=1000)
         st.write("#### Asignación de Posiciones (1° al 5° lugar)")
         all_players = df_pos["Jugador"].tolist()
-        options_players = ["-- Seleccionar --"] + all_players
-        pos1 = st.selectbox("🥇 1er Lugar", options=options_players, index=0)
-        pos2 = st.selectbox("🥈 2do Lugar", options=options_players, index=0)
-        pos3 = st.selectbox("🥉 3er Lugar", options=options_players, index=0)
-        pos4 = st.selectbox("4to Lugar", options=options_players, index=0)
-        pos5 = st.selectbox("5to Lugar", options=options_players, index=0)
+        NA = "-- Seleccionar --"
+
+        # Inicializar estado de selecciones si no existe
+        for r in range(1, 6):
+            key = f"reg_pos{r}_{fecha_num}"
+            if key not in st.session_state:
+                st.session_state[key] = NA
+
+        # Construir dropdowns en cascada: cada uno excluye los ya elegidos antes
+        selections = []
+        labels = ["🥇 1er Lugar", "🥈 2do Lugar", "🥉 3er Lugar", "4to Lugar", "5to Lugar"]
+        for r in range(1, 6):
+            key = f"reg_pos{r}_{fecha_num}"
+            # Jugadores ya elegidos en posiciones anteriores (excluir NA)
+            already_picked = {st.session_state[f"reg_pos{prev}_{fecha_num}"]
+                              for prev in range(1, r)
+                              if st.session_state.get(f"reg_pos{prev}_{fecha_num}", NA) != NA}
+            available = [NA] + [p for p in all_players if p not in already_picked]
+            # Si el valor actual ya no está disponible, resetear
+            if st.session_state[key] not in available:
+                st.session_state[key] = NA
+            sel = st.selectbox(labels[r-1], options=available,
+                               key=key, index=available.index(st.session_state[key]))
+            selections.append(sel)
+
         if st.button("💾 Guardar y Actualizar Fecha"):
             pts_rule = data_manager.POINTS_RULES[tourn_type]
             for idx in range(len(df_pos)):
                 df_pos.at[idx, fecha_num] = 0
-            placed = [pos1, pos2, pos3, pos4, pos5]
-            for rank_idx, p_name in enumerate(placed):
-                if p_name and p_name != "-- Seleccionar --":
+            for rank_idx, p_name in enumerate(selections):
+                if p_name and p_name != NA:
                     pts = pts_rule.get(rank_idx + 1, 0)
                     p_mask = df_pos["Jugador"] == p_name
                     if p_mask.any():
@@ -486,13 +504,22 @@ if st.session_state["is_admin"] and tab2:
             if f_index < len(subheaders):
                 subheaders[f_index] = sub_code
             rake_dict[f"F{int(fecha_num)}"] = new_rake
-            ok, err = data_manager.save_data(df_pos, rake_dict, subheaders)
+            with st.spinner("Guardando..."):
+                result = data_manager.save_data(df_pos, rake_dict, subheaders)
+                if isinstance(result, tuple):
+                    ok, err = result
+                else:
+                    ok, err = bool(result), None
             if ok:
-                st.success(f"✅ ¡Fecha {fecha_num} guardada exitosamente en Google Sheets!")
+                # Limpiar selecciones del formulario
+                for r in range(1, 6):
+                    st.session_state[f"reg_pos{r}_{fecha_num}"] = NA
+                st.success(f"✅ ¡Fecha {fecha_num} guardada exitosamente!")
                 st.rerun()
             else:
                 st.error(f"❌ Error al guardar: {err}")
-                st.warning("Revisa que el Apps Script esté publicado correctamente (ver instrucciones del Admin).")
+                st.info("💡 Asegúrate de haber subido `data_manager.py` actualizado a GitHub.")
+
 
 # ─── TAB 4: JUGADORES (ADMIN) ───────────────────────────────────────────────
 if st.session_state["is_admin"] and tab4:
