@@ -507,8 +507,9 @@ if st.session_state["is_admin"] and tab2:
                 if st.session_state.get(f"reg_pos{prev}_{fecha_num}", NA) != NA
             }
             available = [NA] + [p for p in all_players if p not in already_picked]
-            sel = st.selectbox(labels[r-1], options=available,
-                               key=key, index=available.index(st.session_state[key]))
+            current_val = st.session_state.get(key, NA)
+            safe_idx = available.index(current_val) if current_val in available else 0
+            sel = st.selectbox(labels[r - 1], options=available, key=key, index=safe_idx)
             selections.append(sel)
 
         if st.button("💾 Guardar y Actualizar Fecha"):
