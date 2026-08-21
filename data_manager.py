@@ -93,7 +93,8 @@ def load_data():
         if res_pos.status_code == 200 and res_rake.status_code == 200:
             df_raw = pd.read_csv(io.StringIO(res_pos.text), header=None)
             
-            subheaders = [str(df_raw.iloc[2, 3 + i]) if not pd.isna(df_raw.iloc[2, 3 + i]) else "" for i in range(10)]
+            # Subheaders now at row 1 (row 2 = Bingo Poker Club title, row 1 = date headers)
+            subheaders = [str(df_raw.iloc[1, 3 + i]) if not pd.isna(df_raw.iloc[1, 3 + i]) else "" for i in range(10)]
             
             players_data = []
             for r in range(2, len(df_raw)):
@@ -104,7 +105,7 @@ def load_data():
                 
                 pts = {}
                 for col_i, f_name in enumerate(FECHAS_STANDARD):
-                    val = row[4 + col_i]
+                    val = row[3 + col_i]  # Points now start at col D (index 3), was col E (index 4)
                     try:
                         pts[f_name] = int(float(val)) if not pd.isna(val) else 0
                     except Exception:
@@ -133,7 +134,13 @@ def load_data():
             rake_cols = [f"F{i}" for i in range(1, 11)]
             rake_dict = {}
             for i in range(1, 11):
-                val = df_rake_raw.iloc[1, i] if len(df_rake_raw) > 1 else 0
+                # Try row 0 first (new structure), fall back to row 1 (old structure)
+                try:
+                    val = df_rake_raw.iloc[0, i]
+                    if pd.isna(val) and len(df_rake_raw) > 1:
+                        val = df_rake_raw.iloc[1, i]
+                except Exception:
+                    val = 0
                 try:
                     rake_dict[f"F{i}"] = float(val) if not pd.isna(val) else 0.0
                 except Exception:
