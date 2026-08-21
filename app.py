@@ -511,9 +511,6 @@ if st.session_state["is_admin"] and tab2:
                 else:
                     ok, err = bool(result), None
             if ok:
-                # Limpiar selecciones del formulario
-                for r in range(1, 6):
-                    st.session_state[f"reg_pos{r}_{fecha_num}"] = NA
                 st.success(f"✅ ¡Fecha {fecha_num} guardada exitosamente!")
                 st.rerun()
             else:
