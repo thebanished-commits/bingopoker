@@ -33,7 +33,7 @@ def get_logo_b64():
     return None
 
 logo_b64 = get_logo_b64()
-ADMIN_PASSWORD = "admin123"
+ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD", "")
 
 if "is_admin" not in st.session_state:
     st.session_state["is_admin"] = False
@@ -277,7 +277,7 @@ st.sidebar.title("🔐 Acceso Administrador")
 if not st.session_state["is_admin"]:
     input_pass = st.sidebar.text_input("Ingresa la clave de administrador:", type="password")
     if st.sidebar.button("Ingresar como Admin"):
-        if input_pass == ADMIN_PASSWORD:
+        if ADMIN_PASSWORD and input_pass == ADMIN_PASSWORD:
             st.session_state["is_admin"] = True
             st.sidebar.success("¡Acceso concedido!")
             st.rerun()
@@ -299,7 +299,11 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-data = data_manager.load_data()
+try:
+    data = data_manager.load_data()
+except Exception as e:
+    st.error(f"❌ No se pudieron cargar los datos: {e}")
+    st.stop()
 df_pos = data["df_posiciones"]
 rake_dict = data["rake_dict"]
 total_rake = data["total_rake"]
@@ -428,13 +432,13 @@ with tab3:
 # ─── TAB 5: CALENDARIO ──────────────────────────────────────────────────────
 with tab5:
     st.subheader("📅 Calendario Oficial 2026 – 2027")
-    st.caption("Programación de la temporada, leída en vivo desde Google Sheets.")
+    st.caption("Programación de la temporada.")
 
     schedule_data = data.get("schedule_data", [])
     evento_final = data.get("evento_final", "Sábado 09 de Enero 2027 desde las 14 horas")
 
     if not schedule_data:
-        st.markdown('<div class="empty-state"><span class="empty-icon">📅</span>No hay fechas cargadas en el Calendario de Google Sheets aún.</div>', unsafe_allow_html=True)
+        st.markdown('<div class="empty-state"><span class="empty-icon">📅</span>No hay fechas pendientes en el calendario.</div>', unsafe_allow_html=True)
     else:
         for s in schedule_data:
             card_class = "cal-card cal-next" if s.get("next") else "cal-card"
@@ -460,9 +464,6 @@ if st.session_state["is_admin"] and tab2:
             sub_code = "ME-" + sub_code
         current_rake = rake_dict.get(f"F{int(fecha_num)}", 0)
         new_rake = st.number_input(f"Rake Recaudado en Fecha {fecha_num} ($)", min_value=0, value=int(current_rake), step=1000)
-
-        with st.expander("🔍 Debug — Jugadores cargados desde Google Sheets"):
-            st.write(df_pos["Jugador"].tolist())
 
         all_players = df_pos["Jugador"].tolist()
         NA = "-- Seleccionar --"
@@ -514,33 +515,19 @@ if st.session_state["is_admin"] and tab2:
 
         if st.button("💾 Guardar y Actualizar Fecha"):
             pts_rule = data_manager.POINTS_RULES[tourn_type]
-            for idx in range(len(df_pos)):
-                df_pos.at[idx, fecha_num] = 0
-            for rank_idx, p_name in enumerate(selections):
-                if p_name and p_name != NA:
-                    pts = pts_rule.get(rank_idx + 1, 0)
-                    p_mask = df_pos["Jugador"] == p_name
-                    if p_mask.any():
-                        p_i = df_pos[p_mask].index[0]
-                        df_pos.at[p_i, fecha_num] = pts
-            df_pos["Total"] = df_pos[FECHAS_STANDARD].sum(axis=1)
-            df_pos = df_pos.sort_values(by="Total", ascending=False).reset_index(drop=True)
-            df_pos["Pos"] = range(1, len(df_pos) + 1)
-            if f_index < len(subheaders):
-                subheaders[f_index] = sub_code
-            rake_dict[f"F{int(fecha_num)}"] = new_rake
+            resultados = [
+                {"jugador": p_name, "puntos": pts_rule.get(rank_idx + 1, 0)}
+                for rank_idx, p_name in enumerate(selections)
+                if p_name and p_name != NA
+            ]
             with st.spinner("Guardando..."):
-                result = data_manager.save_data(df_pos, rake_dict, subheaders)
-                if isinstance(result, tuple):
-                    ok, err = result
-                else:
-                    ok, err = bool(result), None
+                ok, err = data_manager.save_fecha(fecha_num, tourn_type, sub_code, new_rake, resultados)
             if ok:
+                st.session_state.pop("report_img", None)
                 st.success(f"✅ ¡Fecha {fecha_num} guardada exitosamente!")
                 st.rerun()
             else:
                 st.error(f"❌ Error al guardar: {err}")
-                st.info("💡 Asegúrate de haber subido `data_manager.py` actualizado a GitHub.")
 
 
 # ─── TAB 4: JUGADORES (ADMIN) ───────────────────────────────────────────────
@@ -552,11 +539,7 @@ if st.session_state["is_admin"] and tab4:
             if new_p_name and new_p_name.strip():
                 p_clean = new_p_name.strip()
                 if p_clean not in df_pos["Jugador"].values:
-                    new_row = {"Pos": len(df_pos) + 1, "Jugador": p_clean, "Total": 0}
-                    for f in FECHAS_STANDARD:
-                        new_row[f] = 0
-                    df_pos = pd.concat([df_pos, pd.DataFrame([new_row])], ignore_index=True)
-                    ok, err = data_manager.save_data(df_pos, rake_dict, subheaders)
+                    ok, err = data_manager.add_player(p_clean)
                     if ok:
                         st.success(f"✅ Jugador '{p_clean}' agregado con éxito.")
                         st.rerun()
@@ -569,6 +552,6 @@ if st.session_state["is_admin"] and tab4:
 st.markdown("""
 <div class="app-footer">
     Temporada <span>2026</span> · <span>Bingo Poker Club</span> · Liga Oficial de Poker Chile 🃏<br>
-    <small style="opacity:0.5;">Datos actualizados en tiempo real desde Google Sheets</small>
+    <small style="opacity:0.5;">Datos actualizados en tiempo real</small>
 </div>
 """, unsafe_allow_html=True)
