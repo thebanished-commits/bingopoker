@@ -14,7 +14,6 @@ st.set_page_config(
 
 N_FECHAS = 10
 NA = "— Seleccionar —"
-MEDALS = {1: "🥇", 2: "🥈", 3: "🥉"}
 ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD", "")
 
 
@@ -27,6 +26,12 @@ def fmt_money(val):
 
 def esc(x):
     return html.escape(str(x))
+
+
+def medal(pos, size=""):
+    """Medalla con número grande y legible (reemplaza los emojis)."""
+    cls = {1: "mg", 2: "ms", 3: "mb"}.get(pos, "mn")
+    return f'<span class="md {cls} {size}">{pos}</span>'
 
 
 @st.cache_data
@@ -72,16 +77,41 @@ h1,h2,h3 { font-family:'Outfit', sans-serif !important; letter-spacing:.3px; }
 .hdr-next span { display:block; color:#e2e8f0; font-size:.85rem; font-weight:600; }
 
 /* Podio */
-.podium { display:grid; grid-template-columns:1fr 1.15fr 1fr; gap:14px; align-items:end; margin:6px 0 16px; }
+.podium { display:grid; grid-template-columns:1fr 1.15fr 1fr; gap:14px; align-items:end; margin:6px 0 0; }
 .pod { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px 12px; text-align:center;
        box-shadow:0 8px 22px rgba(0,0,0,.35); }
-.pod .m { font-size:1.7rem; line-height:1; }
+.pod .m { line-height:1; }
 .pod .n { font-family:'Outfit',sans-serif; font-weight:800; font-size:1.2rem; color:var(--ink); margin-top:6px; }
 .pod .p { font-family:'Outfit',sans-serif; font-weight:800; font-size:1.55rem; color:var(--gold2); }
 .pod .g { color:var(--muted); font-size:.78rem; font-weight:700; }
 .pod.first { border:2px solid var(--gold); padding:22px 12px; background:linear-gradient(160deg, rgba(180,83,9,.35), rgba(15,23,42,.95));
              box-shadow:0 0 28px rgba(245,158,11,.28); }
-.pod.first .m { font-size:2.2rem; } .pod.first .n { font-size:1.4rem; } .pod.first .p { font-size:1.9rem; }
+.pod.first .n { font-size:1.4rem; } .pod.first .p { font-size:1.9rem; }
+
+/* Medallas */
+.md { display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:50%;
+      font-family:'Outfit',sans-serif; font-weight:800; font-size:1rem; color:#111827; flex-shrink:0;
+      box-shadow:inset 0 -2px 0 rgba(0,0,0,.25), 0 2px 6px rgba(0,0,0,.35); }
+.md.mg { background:linear-gradient(145deg,#fde68a,#f59e0b); }
+.md.ms { background:linear-gradient(145deg,#f1f5f9,#94a3b8); }
+.md.mb { background:linear-gradient(145deg,#fdba74,#b45309); }
+.md.mn { background:transparent; color:var(--muted); box-shadow:none; }
+.md.lg { width:46px; height:46px; font-size:1.45rem; }
+.md.xl { width:58px; height:58px; font-size:1.85rem; }
+
+/* Bloque de pozos */
+.money { display:grid; grid-template-columns:1.25fr 1fr 1fr; gap:12px; margin:26px 0 8px; }
+.mtot { border-radius:16px; padding:16px 20px; background:linear-gradient(135deg,#fbbf24,#d97706); color:#111827;
+        box-shadow:0 8px 26px rgba(245,158,11,.3); }
+.mtot small { display:block; font-size:.75rem; font-weight:800; letter-spacing:1px; text-transform:uppercase; opacity:.8; }
+.mtot b { display:block; font-family:'Outfit',sans-serif; font-size:2.3rem; font-weight:800; line-height:1.1; }
+.mtot span { font-size:.82rem; font-weight:700; opacity:.8; }
+.mcard { border-radius:16px; padding:16px 18px; background:var(--card); border:1px solid rgba(245,158,11,.4); }
+.mcard small { display:block; color:var(--ink); font-size:.95rem; font-weight:800; }
+.mcard em { display:block; font-style:normal; color:var(--muted); font-size:.75rem; font-weight:700; margin-bottom:4px; }
+.mcard b { font-family:'Outfit',sans-serif; font-size:1.9rem; font-weight:800; color:var(--gold2); }
+.morg { text-align:right; color:var(--muted); font-size:.8rem; font-weight:700; margin-bottom:12px; }
+.morg b { color:#cbd5e1; }
 
 /* Franja de pozos */
 .strip { display:grid; grid-template-columns:repeat(4,1fr); background:var(--card); border:1px solid var(--line);
@@ -128,6 +158,7 @@ h1,h2,h3 { font-family:'Outfit', sans-serif !important; letter-spacing:.3px; }
 
 /* Tarjetas posiciones (celular) */
 .lbm { display:none; }
+.lbx-wrap { display:none; }
 .lbm details { background:rgba(30,41,59,.75); border:1px solid rgba(245,158,11,.15); border-radius:12px; margin-bottom:8px; }
 .lbm details.r1 { border-color:var(--gold); background:rgba(180,83,9,.25); }
 .lbm summary { list-style:none; display:flex; align-items:center; gap:10px; padding:12px 14px; cursor:pointer; }
@@ -146,7 +177,8 @@ h1,h2,h3 { font-family:'Outfit', sans-serif !important; letter-spacing:.3px; }
 .prize h4 { color:var(--gold2); font-size:.82rem; font-weight:800; letter-spacing:.8px; text-transform:uppercase; margin:0 0 2px; }
 .prize .tot { font-family:'Outfit',sans-serif; font-size:1.6rem; font-weight:800; color:var(--ink); padding-bottom:8px; border-bottom:1px solid var(--line); margin-bottom:6px; }
 .prize .row { display:flex; justify-content:space-between; padding:5px 0; color:#cbd5e1; font-weight:600; font-size:.93rem; }
-.prize .row b { color:var(--gold2); }
+.prize .row b { color:var(--gold2); font-family:'Outfit',sans-serif; font-size:1.1rem; }
+.prize .row { align-items:center; } .prize .pl { display:flex; align-items:center; gap:10px; }
 .rakes { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; }
 .rk { background:var(--card); border:1px solid rgba(148,163,184,.18); border-radius:12px; padding:10px; text-align:center; }
 .rk small { color:var(--muted); font-size:.72rem; font-weight:800; text-transform:uppercase; }
@@ -189,11 +221,25 @@ h1,h2,h3 { font-family:'Outfit', sans-serif !important; letter-spacing:.3px; }
   .hdr-next b, .hdr-next span { display:inline; } .hdr-next span::before { content:" · "; color:var(--muted); }
   .podium { gap:8px; } .pod { padding:10px 6px; } .pod.first { padding:14px 6px; }
   .pod .n { font-size:.95rem; } .pod.first .n { font-size:1.05rem; } .pod .p { font-size:1.15rem; } .pod.first .p { font-size:1.4rem; }
-  .pod .m { font-size:1.3rem; } .pod.first .m { font-size:1.7rem; }
   .strip { grid-template-columns:repeat(2,1fr); }
   .strip > div:nth-child(2) { border-right:none; } .strip > div:nth-child(-n+2) { border-bottom:1px solid var(--line); }
   .strip b { font-size:1.1rem; }
   .lb { display:none !important; } .lbm { display:block !important; }
+  .lbx-wrap { display:block; margin-top:6px; }
+  .lbx-wrap > summary { list-style:none; cursor:pointer; text-align:center; padding:11px; border-radius:12px; font-weight:800;
+       color:var(--gold2); border:1px solid rgba(245,158,11,.5); background:rgba(15,23,42,.7); }
+  .lbx-wrap > summary::-webkit-details-marker { display:none; }
+  .lbx-wrap[open] > summary { margin-bottom:8px; }
+  .lbx-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; border-radius:12px; }
+  .lb.lbx { display:table !important; min-width:560px; border-spacing:0 4px; }
+  .lb.lbx td, .lb.lbx th { padding:9px 7px; font-size:.85rem; }
+  .lb.lbx td:nth-child(2), .lb.lbx th:nth-child(2) { position:sticky; left:0; z-index:1; background:#141b2e; }
+  .lb.lbx tr.r1 td:nth-child(2) { background:#3a2614; }
+  .md { width:26px; height:26px; font-size:.9rem; } .md.lg { width:36px; height:36px; font-size:1.15rem; } .md.xl { width:44px; height:44px; font-size:1.4rem; }
+  .money { grid-template-columns:1fr 1fr; gap:10px; margin-top:20px; }
+  .mtot { grid-column:1 / -1; padding:14px 16px; } .mtot b { font-size:1.9rem; }
+  .mcard { padding:12px 14px; } .mcard small { font-size:.85rem; } .mcard b { font-size:1.35rem; }
+  .morg { text-align:center; }
   .prizes { grid-template-columns:1fr; } .rakes { grid-template-columns:repeat(2,1fr); }
   .cal { flex-direction:column; align-items:flex-start; gap:4px; }
   .stTabs [role="tab"] { padding:6px 12px !important; } .stTabs [role="tab"] p { font-size:.85rem !important; }
@@ -265,18 +311,18 @@ if has_data:
         p = top[i]
         gap = lead - int(p["Total"])
         g = "Líder" if i == 0 else (f"a {gap} pts" if gap else "Empatado")
-        return (f'<div class="pod {cls}"><div class="m">{MEDALS[i + 1]}</div><div class="n">{esc(p["Jugador"])}</div>'
+        return (f'<div class="pod {cls}"><div class="m">{medal(i + 1, "xl" if i == 0 else "lg")}</div><div class="n">{esc(p["Jugador"])}</div>'
                 f'<div class="p">{int(p["Total"])} pts</div><div class="g">{g}</div></div>')
 
     st.markdown(f'<div class="podium">{pod(1)}{pod(0, "first")}{pod(2)}</div>', unsafe_allow_html=True)
 
 st.markdown(f"""
-<div class="strip">
-  <div class="hl"><small>Rake total</small><b>{fmt_money(total_rake)}</b></div>
-  <div><small>Campeonato · 50%</small><b>{fmt_money(camp_total)}</b></div>
-  <div><small>Mesa Final · 40%</small><b>{fmt_money(mf_total)}</b></div>
-  <div><small>Organización · 10%</small><b>{fmt_money(gastos_mf)}</b></div>
+<div class="money">
+  <div class="mtot"><small>Rake total acumulado</small><b>{fmt_money(total_rake)}</b><span>{len(jugadas)} de {N_FECHAS} fechas jugadas</span></div>
+  <div class="mcard"><small>🏆 Campeonato</small><em>50% del rake</em><b>{fmt_money(camp_total)}</b></div>
+  <div class="mcard"><small>🃏 Mesa Final</small><em>40% del rake</em><b>{fmt_money(mf_total)}</b></div>
 </div>
+<div class="morg">Organización (10%): <b>{fmt_money(gastos_mf)}</b></div>
 """, unsafe_allow_html=True)
 
 # ─── TABS ────────────────────────────────────────────────────────────────────
@@ -302,7 +348,7 @@ with t_pos:
         for idx, r in df_pos.iterrows():
             pos = idx + 1
             cls = f"r{pos}" if pos <= 3 else ""
-            badge = MEDALS.get(pos, f"{pos}º")
+            badge = medal(pos)
             tds = ""
             chips = ""
             for n in jugadas:
@@ -317,12 +363,14 @@ with t_pos:
             lf = f'<span class="lf">+{lv} F{ultima:02d}</span>' if lv else ""
             cards += (f'<details class="{cls}"><summary><span class="pos">{badge}</span><span class="nm">{name}</span>{lf}'
                       f'<span class="tt">{tot} pts</span></summary><div class="det">{chips}</div></details>')
+        thead = f'<thead><tr><th></th><th class="l">Jugador</th>{th}<th>Total</th></tr></thead>'
         st.markdown(
-            f'<table class="lb"><thead><tr><th></th><th class="l">Jugador</th>{th}<th>Total</th></tr></thead>'
-            f'<tbody>{rows}</tbody></table><div class="lbm">{cards}</div>',
+            f'<table class="lb">{thead}<tbody>{rows}</tbody></table>'
+            f'<div class="lbm">{cards}</div>'
+            f'<details class="lbx-wrap"><summary>📋 Ver tabla completa por fecha</summary>'
+            f'<div class="lbx-scroll"><table class="lb lbx">{thead}<tbody>{rows}</tbody></table></div></details>',
             unsafe_allow_html=True,
         )
-        st.caption("En el celular, toca un jugador para ver sus puntos por fecha.")
 
     st.markdown('<div class="sec-title" style="margin-top:1.4rem">Imagen para WhatsApp</div>'
                 '<div class="sec-cap">Genera la imagen oficial de la tabla para compartir en el grupo.</div>', unsafe_allow_html=True)
@@ -340,13 +388,13 @@ with t_poz:
     st.markdown(f"""
     <div class="prizes">
       <div class="prize"><h4>Campeonato · 50%</h4><div class="tot">{fmt_money(camp_total)}</div>
-        <div class="row"><span>🥇 1º lugar (50%)</span><b>{fmt_money(camp_total * .5)}</b></div>
-        <div class="row"><span>🥈 2º lugar (30%)</span><b>{fmt_money(camp_total * .3)}</b></div>
-        <div class="row"><span>🥉 3º lugar (20%)</span><b>{fmt_money(camp_total * .2)}</b></div></div>
+        <div class="row"><span class="pl">{medal(1)} 1º lugar · 50%</span><b>{fmt_money(camp_total * .5)}</b></div>
+        <div class="row"><span class="pl">{medal(2)} 2º lugar · 30%</span><b>{fmt_money(camp_total * .3)}</b></div>
+        <div class="row"><span class="pl">{medal(3)} 3º lugar · 20%</span><b>{fmt_money(camp_total * .2)}</b></div></div>
       <div class="prize"><h4>Mesa Final · 40%</h4><div class="tot">{fmt_money(mf_total)}</div>
-        <div class="row"><span>🥇 1º lugar (50%)</span><b>{fmt_money(mf_total * .5)}</b></div>
-        <div class="row"><span>🥈 2º lugar (30%)</span><b>{fmt_money(mf_total * .3)}</b></div>
-        <div class="row"><span>🥉 3º lugar (20%)</span><b>{fmt_money(mf_total * .2)}</b></div></div>
+        <div class="row"><span class="pl">{medal(1)} 1º lugar · 50%</span><b>{fmt_money(mf_total * .5)}</b></div>
+        <div class="row"><span class="pl">{medal(2)} 2º lugar · 30%</span><b>{fmt_money(mf_total * .3)}</b></div>
+        <div class="row"><span class="pl">{medal(3)} 3º lugar · 20%</span><b>{fmt_money(mf_total * .2)}</b></div></div>
       <div class="prize"><h4>Organización · 10%</h4><div class="tot">{fmt_money(gastos_mf)}</div>
         <div class="row"><span>Logística y organización</span><b>10% del rake</b></div></div>
     </div>""", unsafe_allow_html=True)
@@ -371,6 +419,17 @@ with t_cal:
                     f'<div class="d">{esc(s["desc"])}</div></div>', unsafe_allow_html=True)
     if evento_final:
         st.markdown(f'<div class="final"><h3>🏆 Gran Evento Mesa Final</h3><div>{esc(evento_final)}</div></div>', unsafe_allow_html=True)
+    if st.session_state["is_admin"]:
+        with st.expander("✏️ Editar Gran Evento Mesa Final"):
+            with st.form("edit_final"):
+                txt = st.text_input("Fecha y hora del evento", value=evento_final)
+                if st.form_submit_button("Guardar"):
+                    ok, err = data_manager.update_evento_final(txt.strip())
+                    if ok:
+                        st.session_state.pop("report_img", None)
+                        st.rerun()
+                    else:
+                        st.error(f"Error: {err}")
 
 # ─── REGISTRAR FECHA (ADMIN) ─────────────────────────────────────────────────
 if t_reg is not None:
@@ -435,7 +494,7 @@ if t_reg is not None:
 
         st.markdown("**Posiciones (1º a 5º)**")
         rule = data_manager.POINTS_RULES[tipo]
-        labels = ["🥇 1º lugar", "🥈 2º lugar", "🥉 3º lugar", "4º lugar", "5º lugar"]
+        labels = ["1º lugar", "2º lugar", "3º lugar", "4º lugar", "5º lugar"]
         selections = []
         cols = st.columns(5)
         for r in range(1, 6):

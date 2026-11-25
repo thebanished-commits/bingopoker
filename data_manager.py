@@ -20,7 +20,7 @@ POINTS_RULES = {
 }
 
 FECHAS_STANDARD = [f"{i:02d}" for i in range(1, 11)]
-DEFAULT_EVENTO_FINAL = "Sabado 09 de Enero 2027 desde las 14 horas"
+DEFAULT_EVENTO_FINAL = "Sábado 16 de enero 2027 desde las 14 horas"
 
 
 # ─── Cliente REST mínimo ─────────────────────────────────────────────────────
@@ -170,6 +170,22 @@ def delete_fecha(fecha_num):
     try:
         _delete("bpc_resultados", f"fecha=eq.{int(fecha_num)}")
         _delete("bpc_fechas", f"fecha=eq.{int(fecha_num)}")
+        return True, None
+    except Exception as e:
+        return False, str(e)
+
+def update_evento_final(texto):
+    """Cambia la fecha/hora del Gran Evento Mesa Final."""
+    if not texto:
+        return False, "El texto no puede quedar vacío."
+    try:
+        url, _ = _cfg()
+        h = _headers({"Prefer": "return=representation"})
+        r = requests.patch(f"{url}/rest/v1/bpc_calendario?es_final=eq.true", headers=h, json={"descripcion": texto}, timeout=15)
+        if r.status_code >= 300:
+            raise RuntimeError(f"Supabase {r.status_code}: {r.text[:300]}")
+        if not r.json():  # no existía la fila → crearla
+            _insert("bpc_calendario", [{"orden": 99, "descripcion": texto, "es_final": True}])
         return True, None
     except Exception as e:
         return False, str(e)
