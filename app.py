@@ -62,10 +62,10 @@ def build_image(key, data):
 
 SHARE_HTML = """
 <div style="font-family:system-ui,sans-serif">
-<button id="b" style="width:100%;padding:14px;border:none;border-radius:12px;font-weight:800;font-size:16px;cursor:pointer;
+<button id="b" style="width:100%;padding:10px;border:none;border-radius:12px;font-weight:800;font-size:15px;cursor:pointer;
  background:linear-gradient(135deg,#22c55e,#16a34a);color:#04120a;box-shadow:0 4px 14px rgba(34,197,94,.35)">
  📲 Compartir imagen en WhatsApp</button>
-<div id="m" style="color:#94a3b8;font-size:13px;margin-top:8px;text-align:center">Se abre el menú del celular: elige WhatsApp y el grupo.</div>
+<div id="m" style="color:#94a3b8;font-size:12px;margin-top:6px;text-align:center">Elige WhatsApp y el grupo.</div>
 </div>
 <script>
 const B64="__IMG__", TXT=__TXT__;
@@ -422,23 +422,22 @@ with t_pos:
     if has_data:
         wa_text = report_generator.whatsapp_text(data)
         img_bytes = build_image(wa_text, data)
-        c_img, c_act = st.columns([1, 1])
-        with c_img:
-            st.image(img_bytes, width="stretch")
-        with c_act:
-            b64 = base64.b64encode(img_bytes).decode()
-            share_html = SHARE_HTML.replace("__IMG__", b64).replace("__TXT__", json.dumps(wa_text))
+        b64 = base64.b64encode(img_bytes).decode()
+        share_html = SHARE_HTML.replace("__IMG__", b64).replace("__TXT__", json.dumps(wa_text))
+        c1, c2, c3 = st.columns(3)
+        with c1:
             if hasattr(st, "iframe"):
-                st.iframe(share_html, height=150)
+                st.iframe(share_html, height=78)
             else:  # Streamlit antiguo
                 import streamlit.components.v1 as components
-                components.html(share_html, height=150)
+                components.html(share_html, height=78)
+        with c2:
+            st.link_button("💬 Enviar resumen en texto", "https://wa.me/?text=" + urllib.parse.quote(wa_text), width="stretch")
+        with c3:
             st.download_button("⬇️ Descargar imagen", data=img_bytes, file_name="bingo_poker_club_posiciones.png",
                                mime="image/png", width="stretch")
-            st.link_button("💬 Enviar resumen en texto", "https://wa.me/?text=" + urllib.parse.quote(wa_text),
-                           width="stretch")
-            with st.expander("Ver el texto del resumen"):
-                st.code(wa_text, language=None)
+        with st.expander("👀 Ver la imagen antes de compartir"):
+            st.image(img_bytes, width=420)
 
 # ─── POZOS ───────────────────────────────────────────────────────────────────
 with t_poz:
