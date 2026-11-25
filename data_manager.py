@@ -71,7 +71,7 @@ def _payouts(total_rake):
 def load_data():
     jugadores = _get("bpc_jugadores", "select=id,nombre&activo=eq.true&order=id")
     resultados = _get("bpc_resultados", "select=fecha,jugador_id,puntos")
-    fechas = _get("bpc_fechas", "select=fecha,sub_code,rake")
+    fechas = _get("bpc_fechas", "select=fecha,tipo_torneo,sub_code,rake")
     calendario = _get("bpc_calendario", "select=*&order=orden")
 
     # Posiciones (mismo formato que antes: Pos, Jugador, 01..10, Total)
@@ -90,6 +90,18 @@ def load_data():
     rake_dict = {f"F{i}": float(f_map.get(i, {}).get("rake") or 0) for i in range(1, 11)}
     subheaders = [(f_map.get(i, {}).get("sub_code") or "") for i in range(1, 11)]
     total_rake = sum(rake_dict.values())
+
+    # Estado de cada fecha (registrada = tiene resultados o fila en bpc_fechas)
+    con_puntos = {r["fecha"] for r in resultados if (r["puntos"] or 0) > 0}
+    fechas_info = {}
+    for i in range(1, 11):
+        f = f_map.get(i, {})
+        fechas_info[i] = {
+            "registrada": (i in f_map) or (i in con_puntos),
+            "tipo": f.get("tipo_torneo"),
+            "sub": f.get("sub_code") or "",
+            "rake": float(f.get("rake") or 0),
+        }
 
     # Calendario: "próximo" = primera fecha que aún no tiene resultados
     jugadas = {r["fecha"] for r in resultados if (r["puntos"] or 0) > 0}
@@ -121,6 +133,7 @@ def load_data():
         "payouts": _payouts(total_rake),
         "schedule_data": schedule_data,
         "evento_final": evento_final,
+        "fechas_info": fechas_info,
     }
 
 
@@ -142,6 +155,21 @@ def save_fecha(fecha_num, tipo_torneo, sub_code, rake, resultados):
 def add_player(nombre):
     try:
         _insert("bpc_jugadores", [{"nombre": nombre}])
+        return True, None
+    except Exception as e:
+        return False, str(e)
+
+def _delete(table, query):
+    url, _ = _cfg()
+    r = requests.delete(f"{url}/rest/v1/{table}?{query}", headers=_headers(), timeout=15)
+    if r.status_code >= 300:
+        raise RuntimeError(f"Supabase {r.status_code}: {r.text[:300]}")
+
+def delete_fecha(fecha_num):
+    """Borra resultados y rake de una fecha (vuelve a quedar pendiente)."""
+    try:
+        _delete("bpc_resultados", f"fecha=eq.{int(fecha_num)}")
+        _delete("bpc_fechas", f"fecha=eq.{int(fecha_num)}")
         return True, None
     except Exception as e:
         return False, str(e)

@@ -1,7 +1,7 @@
-import streamlit as st
-import pandas as pd
 import os
 import base64
+import html
+import streamlit as st
 import data_manager
 import report_generator
 
@@ -9,549 +9,503 @@ st.set_page_config(
     page_title="Bingo Poker Club 2026",
     page_icon="🏆",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed",
 )
 
-FECHAS_STANDARD = [f"{i:02d}" for i in range(1, 11)]
+N_FECHAS = 10
+NA = "— Seleccionar —"
+MEDALS = {1: "🥇", 2: "🥈", 3: "🥉"}
+ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD", "")
+
 
 def fmt_money(val):
     try:
-        return f"${int(val):,}".replace(",", ".")
+        return f"${int(round(val)):,}".replace(",", ".")
     except Exception:
         return "$0"
 
+
+def esc(x):
+    return html.escape(str(x))
+
+
+@st.cache_data
 def get_logo_b64():
-    p_small = os.path.join(os.path.dirname(__file__), 'assets', 'logo_small.png')
-    p_main = os.path.join(os.path.dirname(__file__), 'assets', 'logo.png')
-    target = p_small if os.path.exists(p_small) else (p_main if os.path.exists(p_main) else None)
-    if target:
-        try:
-            with open(target, 'rb') as f:
+    base = os.path.dirname(__file__)
+    for name in ("logo_small.png", "logo.png"):
+        p = os.path.join(base, "assets", name)
+        if os.path.exists(p):
+            with open(p, "rb") as f:
                 return base64.b64encode(f.read()).decode()
-        except Exception:
-            return None
     return None
 
+
 logo_b64 = get_logo_b64()
-ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD", "")
+st.session_state.setdefault("is_admin", False)
 
-if "is_admin" not in st.session_state:
-    st.session_state["is_admin"] = False
-
-# Inject favicon from logo
-if logo_b64:
-    st.markdown(f"""
-    <link rel="icon" type="image/png" href="data:image/png;base64,{logo_b64}">
-    <script>
-        var link = document.querySelector("link[rel~='icon']");
-        if (!link) {{ link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }}
-        link.href = "data:image/png;base64,{logo_b64}";
-    </script>
-    """, unsafe_allow_html=True)
-
+# ─── ESTILOS ─────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
 
-    .stApp {
-        background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 45%, #070b14 100%) !important;
-        font-family: 'Plus Jakarta Sans', sans-serif;
-        color: #f8fafc;
-    }
+:root { --gold:#f59e0b; --gold2:#facc15; --ink:#f1f5f9; --muted:#94a3b8; --line:rgba(245,158,11,.22);
+        --card:linear-gradient(160deg, rgba(30,41,59,.85), rgba(15,23,42,.92)); }
+.stApp { background: radial-gradient(1200px 600px at 50% -10%, #23205a 0%, #0f172a 45%, #070b14 100%) !important;
+         font-family:'Plus Jakarta Sans', sans-serif; }
+.block-container { padding-top: 4.2rem !important; max-width: 1180px; }
+h1,h2,h3 { font-family:'Outfit', sans-serif !important; letter-spacing:.3px; }
+.sec-title { font-family:'Outfit',sans-serif; font-size:1.35rem; font-weight:800; color:var(--ink); margin:.4rem 0 .1rem; }
+.sec-cap { color:var(--muted); font-size:.88rem; margin-bottom:.8rem; }
 
-    /* Main Header */
-    .main-header {
-        background: linear-gradient(135deg, rgba(30, 27, 75, 0.95) 0%, rgba(15, 23, 42, 0.95) 50%, rgba(180, 83, 9, 0.25) 100%);
-        border: 2px solid #f59e0b;
-        box-shadow: 0 8px 25px rgba(245, 158, 11, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.15);
-        border-radius: 14px;
-        padding: 0.85rem 1rem;
-        text-align: center;
-        margin-bottom: 1.2rem;
-        backdrop-filter: blur(10px);
-    }
-    .main-title {
-        font-family: 'Outfit', sans-serif;
-        background: linear-gradient(135deg, #fffbeb 0%, #facc15 40%, #f59e0b 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-weight: 800;
-        font-size: 1.85rem;
-        margin: 0 0 4px 0;
-        letter-spacing: 1.5px;
-    }
-    .sub-title {
-        color: #fbbf24;
-        font-size: 1.05rem;
-        font-weight: 700;
-        margin-top: 2px;
-        letter-spacing: 1px;
-        text-transform: uppercase;
-    }
+/* Header */
+.hdr { display:flex; align-items:center; gap:18px; padding:14px 22px; margin-bottom:16px;
+       background:linear-gradient(90deg, rgba(49,46,129,.55), rgba(15,23,42,.6)); border:1px solid rgba(245,158,11,.45);
+       border-radius:18px; box-shadow:0 10px 30px rgba(0,0,0,.35); }
+.hdr-logo { width:84px; height:84px; border-radius:50%; object-fit:cover; flex-shrink:0;
+            box-shadow:0 0 0 2px var(--gold), 0 0 24px rgba(245,158,11,.35); }
+.hdr-title { font-family:'Outfit',sans-serif; font-weight:800; font-size:2rem; line-height:1.05;
+             background:linear-gradient(135deg,#fffbeb,#facc15 45%,#f59e0b); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.hdr-sub { color:#cbd5e1; font-size:.8rem; font-weight:700; letter-spacing:1.6px; text-transform:uppercase; margin-top:5px; }
+.hdr-next { margin-left:auto; text-align:right; padding-left:18px; border-left:1px solid var(--line); }
+.hdr-next small { display:block; color:var(--muted); font-size:.7rem; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; }
+.hdr-next b { color:var(--gold2); font-size:1.05rem; font-weight:800; }
+.hdr-next span { display:block; color:#e2e8f0; font-size:.85rem; font-weight:600; }
 
-    /* Metric Cards */
-    div[data-testid="stMetric"] {
-        background: linear-gradient(135deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
-        border: 1px solid rgba(245, 158, 11, 0.35);
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-        border-radius: 14px;
-        padding: 12px;
-        transition: all 0.3s ease;
-    }
-    div[data-testid="stMetric"]:hover {
-        border-color: #f59e0b;
-        box-shadow: 0 8px 25px rgba(245, 158, 11, 0.35);
-        transform: translateY(-2px);
-    }
-    div[data-testid="stMetricLabel"] {
-        color: #cbd5e1 !important;
-        font-size: 0.9rem !important;
-        font-weight: 700 !important;
-        text-transform: uppercase;
-    }
-    div[data-testid="stMetricValue"] {
-        font-family: 'Outfit', sans-serif !important;
-        font-size: 1.6rem !important;
-        background: linear-gradient(135deg, #ffffff 0%, #fbbf24 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-weight: 800 !important;
-    }
+/* Podio */
+.podium { display:grid; grid-template-columns:1fr 1.15fr 1fr; gap:14px; align-items:end; margin:6px 0 16px; }
+.pod { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px 12px; text-align:center;
+       box-shadow:0 8px 22px rgba(0,0,0,.35); }
+.pod .m { font-size:1.7rem; line-height:1; }
+.pod .n { font-family:'Outfit',sans-serif; font-weight:800; font-size:1.2rem; color:var(--ink); margin-top:6px; }
+.pod .p { font-family:'Outfit',sans-serif; font-weight:800; font-size:1.55rem; color:var(--gold2); }
+.pod .g { color:var(--muted); font-size:.78rem; font-weight:700; }
+.pod.first { border:2px solid var(--gold); padding:22px 12px; background:linear-gradient(160deg, rgba(180,83,9,.35), rgba(15,23,42,.95));
+             box-shadow:0 0 28px rgba(245,158,11,.28); }
+.pod.first .m { font-size:2.2rem; } .pod.first .n { font-size:1.4rem; } .pod.first .p { font-size:1.9rem; }
 
-    /* Prize Breakdown Cards */
-    .prize-container {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 14px;
-        margin: 1rem 0 1.5rem 0;
-    }
-    .prize-card {
-        background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
-        border: 1px solid rgba(245, 158, 11, 0.4);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
-        border-radius: 14px;
-        padding: 16px;
-        transition: all 0.3s ease;
-    }
-    .prize-card:hover { border-color: #f59e0b; transform: translateY(-2px); }
-    .prize-card-title { color: #facc15; font-weight: 800; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-    .prize-card-total { font-family: 'Outfit', sans-serif; font-size: 1.55rem; font-weight: 800; color: #ffffff; margin-bottom: 8px; border-bottom: 1px solid rgba(245, 158, 11, 0.2); padding-bottom: 6px; }
-    .prize-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; font-size: 0.93rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
-    .prize-row:last-child { border-bottom: none; }
-    .prize-row span { color: #cbd5e1; font-weight: 600; }
-    .prize-row strong { color: #fbbf24; font-weight: 800; font-size: 1.02rem; }
+/* Franja de pozos */
+.strip { display:grid; grid-template-columns:repeat(4,1fr); background:var(--card); border:1px solid var(--line);
+         border-radius:16px; margin-bottom:10px; overflow:hidden; }
+.strip > div { padding:12px 16px; border-right:1px solid var(--line); }
+.strip > div:last-child { border-right:none; }
+.strip small { display:block; color:var(--muted); font-size:.72rem; font-weight:800; letter-spacing:.8px; text-transform:uppercase; }
+.strip b { font-family:'Outfit',sans-serif; font-size:1.35rem; font-weight:800; color:var(--ink); }
+.strip .hl b { color:var(--gold2); }
 
-    /* Gold Metallic Tab Buttons */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 14px !important;
-        background: transparent !important;
-        border-bottom: 2px solid rgba(245, 158, 11, 0.25) !important;
-        padding-bottom: 12px !important;
-    }
-    .stTabs [data-baseweb="tab"], .stTabs button[role="tab"] {
-        padding: 10px 24px !important;
-        background: rgba(15, 23, 42, 0.85) !important;
-        border-radius: 12px !important;
-        color: #f8fafc !important;
-        font-weight: 700 !important;
-        font-size: 1.05rem !important;
-        border: 2px solid rgba(245, 158, 11, 0.4) !important;
-        transition: all 0.25s ease !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
-        margin-right: 4px !important;
-    }
-    .stTabs [data-baseweb="tab"]:hover, .stTabs button[role="tab"]:hover {
-        background: rgba(30, 41, 59, 0.95) !important;
-        color: #facc15 !important;
-        border-color: #f59e0b !important;
-        transform: translateY(-2px) !important;
-    }
-    .stTabs [aria-selected="true"], .stTabs button[aria-selected="true"] {
-        background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%) !important;
-        color: #ffffff !important;
-        font-weight: 800 !important;
-        border-radius: 12px !important;
-        border: 2px solid #fef08a !important;
-        box-shadow: 0 6px 22px rgba(245, 158, 11, 0.5) !important;
-        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7) !important;
-    }
-    .stTabs [data-baseweb="tab-highlight"], div[data-baseweb="tab-highlight"],
-    div[data-baseweb="tab-border"], .stTabs [data-baseweb="tab-list"] > div[style*="background-color"] {
-        display: none !important; visibility: hidden !important; height: 0px !important;
-        opacity: 0 !important; background: transparent !important; border: none !important;
-    }
+/* Tabs */
+.stTabs [role="tablist"], .stTabs [data-baseweb="tab-list"] { gap:8px !important; border-bottom:1px solid var(--line) !important; padding-bottom:10px !important; flex-wrap:wrap; }
+.stTabs [role="tab"] { padding:8px 18px !important; border-radius:999px !important; border:1px solid rgba(245,158,11,.35) !important;
+       background:rgba(15,23,42,.7) !important; color:#e2e8f0 !important; font-weight:700 !important; height:auto !important; }
+.stTabs [role="tab"] p { font-size:.95rem !important; font-weight:700 !important; color:#e2e8f0 !important; }
+.stTabs [role="tab"][aria-selected="true"] { background:linear-gradient(135deg,#f59e0b,#d97706) !important; border-color:#fde68a !important; }
+.stTabs [role="tab"][aria-selected="true"] p { color:#111827 !important; }
+.stTabs [role="tab"]::after, .stTabs [role="tab"]::before { display:none !important; }
+.stTabs [data-baseweb="tab-highlight"], .stTabs [data-baseweb="tab-border"], .stTabs .react-aria-SelectionIndicator { display:none !important; }
 
-    /* Action Buttons */
-    .stButton>button {
-        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
-        color: #0f172a !important; font-weight: 800 !important; font-size: 1.05rem !important;
-        border: none !important; border-radius: 12px !important; padding: 0.8rem 1.6rem !important;
-        box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35) !important; letter-spacing: 0.5px;
-    }
-    .stButton>button:hover {
-        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
-        box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5) !important; transform: translateY(-1px);
-    }
+/* Botones */
+.stButton>button, .stDownloadButton>button, .stFormSubmitButton>button {
+  background:linear-gradient(135deg,#f59e0b,#d97706) !important; color:#111827 !important; font-weight:800 !important;
+  border:none !important; border-radius:12px !important; box-shadow:0 4px 14px rgba(245,158,11,.3) !important; }
+.stButton>button:disabled { background:#334155 !important; color:#94a3b8 !important; box-shadow:none !important; }
+.stButton>button[kind="secondary"].ghost { background:transparent !important; }
 
-    /* Dataframe */
-    .stDataFrame { border-radius: 12px; overflow: hidden; border: 1px solid rgba(245, 158, 11, 0.3); box-shadow: 0 8px 25px rgba(0,0,0,0.5); }
+/* Tabla posiciones (escritorio) */
+.lb { width:100%; border-collapse:separate; border-spacing:0 6px; }
+.lb th { color:var(--gold2); font-size:.78rem; font-weight:800; text-transform:uppercase; letter-spacing:.6px; padding:6px 8px; text-align:center; }
+.lb th small { display:block; color:var(--muted); font-size:.65rem; font-weight:700; }
+.lb th.l, .lb td.l { text-align:left; }
+.lb td { background:rgba(30,41,59,.7); padding:11px 8px; text-align:center; color:var(--ink); font-weight:700; font-size:.95rem;
+         border-top:1px solid rgba(245,158,11,.12); border-bottom:1px solid rgba(245,158,11,.12); }
+.lb td:first-child { border-left:1px solid rgba(245,158,11,.12); border-radius:12px 0 0 12px; width:48px; color:var(--muted); }
+.lb td:last-child { border-right:1px solid rgba(245,158,11,.12); border-radius:0 12px 12px 0; font-family:'Outfit',sans-serif;
+                    font-size:1.15rem; color:var(--gold2); font-weight:800; }
+.lb tr.r1 td { background:rgba(180,83,9,.28); border-color:rgba(245,158,11,.6); }
+.lb tr.r2 td { background:rgba(100,116,139,.25); }
+.lb tr.r3 td { background:rgba(146,64,14,.2); }
+.lb td.z { color:#334155; }
+.lb td.pt { color:#4ade80; }
+.lb td.last { box-shadow: inset 0 0 0 999px rgba(250,204,21,.05); }
 
-    /* Leaderboard Table */
-    .leaderboard-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; margin: 0.8rem 0; }
-    .leaderboard-table th {
-        background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
-        color: #fbbf24; font-weight: 800; font-size: 0.88rem; padding: 10px 8px; text-align: center;
-        border-top: 1px solid rgba(245, 158, 11, 0.3); border-bottom: 1px solid rgba(245, 158, 11, 0.3);
-        text-transform: uppercase; letter-spacing: 0.5px;
-    }
-    .leaderboard-table th:first-child { border-top-left-radius: 10px; border-bottom-left-radius: 10px; border-left: 1px solid rgba(245, 158, 11, 0.3); text-align: left; padding-left: 14px; }
-    .leaderboard-table th:last-child { border-top-right-radius: 10px; border-bottom-right-radius: 10px; border-right: 1px solid rgba(245, 158, 11, 0.3); }
-    .leaderboard-row { background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%); border: 1px solid rgba(245, 158, 11, 0.2); box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: all 0.3s ease; }
-    .leaderboard-row:hover { border-color: #f59e0b; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(245, 158, 11, 0.2); }
-    .leaderboard-row td { padding: 10px 8px; text-align: center; font-size: 0.95rem; color: #f8fafc; font-weight: 600; }
-    .leaderboard-row td:first-child { border-top-left-radius: 10px; border-bottom-left-radius: 10px; text-align: left; padding-left: 14px; font-weight: 800; }
-    .leaderboard-row td:last-child { border-top-right-radius: 10px; border-bottom-right-radius: 10px; font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 800; color: #facc15; }
-    .rank-1 { background: linear-gradient(135deg, rgba(180, 83, 9, 0.35) 0%, rgba(30, 41, 59, 0.95) 100%) !important; border: 2px solid #f59e0b !important; }
-    .rank-2 { background: linear-gradient(135deg, rgba(100, 116, 139, 0.35) 0%, rgba(30, 41, 59, 0.95) 100%) !important; border: 1.5px solid #94a3b8 !important; }
-    .rank-3 { background: linear-gradient(135deg, rgba(180, 83, 9, 0.2) 0%, rgba(30, 41, 59, 0.95) 100%) !important; border: 1.5px solid #d97706 !important; }
-    .pts-active { color: #4ade80 !important; font-weight: 800 !important; }
-    .pts-zero { color: #1e3a5f !important; font-size: 0.75rem !important; }
+/* Tarjetas posiciones (celular) */
+.lbm { display:none; }
+.lbm details { background:rgba(30,41,59,.75); border:1px solid rgba(245,158,11,.15); border-radius:12px; margin-bottom:8px; }
+.lbm details.r1 { border-color:var(--gold); background:rgba(180,83,9,.25); }
+.lbm summary { list-style:none; display:flex; align-items:center; gap:10px; padding:12px 14px; cursor:pointer; }
+.lbm summary::-webkit-details-marker { display:none; }
+.lbm .pos { width:28px; color:var(--muted); font-weight:800; text-align:center; }
+.lbm .nm { flex:1; color:var(--ink); font-weight:800; }
+.lbm .lf { color:#4ade80; font-size:.78rem; font-weight:800; }
+.lbm .tt { font-family:'Outfit',sans-serif; color:var(--gold2); font-weight:800; font-size:1.15rem; min-width:64px; text-align:right; }
+.lbm .det { display:flex; flex-wrap:wrap; gap:6px; padding:0 14px 12px 52px; }
+.lbm .det span { background:rgba(15,23,42,.8); border:1px solid rgba(148,163,184,.2); border-radius:8px; padding:3px 8px; font-size:.78rem; color:#cbd5e1; font-weight:700; }
+.lbm .det span b { color:#4ade80; }
 
-    /* Empty State */
-    .empty-state {
-        text-align: center; padding: 30px 20px;
-        background: rgba(15, 23, 42, 0.6); border: 1px dashed rgba(245, 158, 11, 0.3);
-        border-radius: 14px; color: #64748b; font-size: 0.95rem; font-weight: 600; margin: 1rem 0;
-    }
-    .empty-state .empty-icon { font-size: 2.5rem; display: block; margin-bottom: 8px; }
+/* Pozos */
+.prizes { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:6px 0 18px; }
+.prize { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; }
+.prize h4 { color:var(--gold2); font-size:.82rem; font-weight:800; letter-spacing:.8px; text-transform:uppercase; margin:0 0 2px; }
+.prize .tot { font-family:'Outfit',sans-serif; font-size:1.6rem; font-weight:800; color:var(--ink); padding-bottom:8px; border-bottom:1px solid var(--line); margin-bottom:6px; }
+.prize .row { display:flex; justify-content:space-between; padding:5px 0; color:#cbd5e1; font-weight:600; font-size:.93rem; }
+.prize .row b { color:var(--gold2); }
+.rakes { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; }
+.rk { background:var(--card); border:1px solid rgba(148,163,184,.18); border-radius:12px; padding:10px; text-align:center; }
+.rk small { color:var(--muted); font-size:.72rem; font-weight:800; text-transform:uppercase; }
+.rk b { display:block; font-family:'Outfit',sans-serif; font-size:1.15rem; color:var(--ink); }
+.rk.ok { border-color:rgba(34,197,94,.55); } .rk.ok b { color:var(--gold2); }
+.rk.pend b { color:#475569; }
 
-    /* Rake Chips Grid */
-    .rake-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 14px; margin: 1rem 0 2rem 0; }
-    .rake-chip { background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 14px 10px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-    .rake-chip-active { border: 2px solid #22c55e !important; box-shadow: 0 0 15px rgba(34, 197, 94, 0.25) !important; }
-    .rake-chip-title { color: #94a3b8; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }
-    .rake-chip-val { font-family: 'Outfit', sans-serif; font-size: 1.3rem; font-weight: 800; color: #facc15; }
-    .rake-status-badge { display: inline-block; margin-top: 6px; font-size: 0.75rem; font-weight: 800; padding: 2px 8px; border-radius: 10px; }
-    .status-ok { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid #22c55e; }
-    .status-wait { background: rgba(148, 163, 184, 0.1); color: #94a3b8; border: 1px solid #475569; }
+/* Calendario */
+.cal { display:flex; align-items:center; justify-content:space-between; gap:12px; background:var(--card); border:1px solid var(--line);
+       border-radius:14px; padding:14px 18px; margin-bottom:10px; }
+.cal .f { font-family:'Outfit',sans-serif; font-weight:800; color:var(--gold2); font-size:1.15rem; min-width:90px; }
+.cal .d { color:var(--ink); font-weight:700; }
+.cal.next { border:2px solid var(--gold); box-shadow:0 0 20px rgba(245,158,11,.25); }
+.badge { background:var(--gold); color:#111827; font-weight:800; font-size:.7rem; padding:3px 9px; border-radius:999px; text-transform:uppercase; margin-left:8px; }
+.final { text-align:center; padding:20px; border-radius:16px; border:2px solid var(--gold2); margin-top:16px;
+         background:linear-gradient(135deg,#1e1b4b,rgba(180,83,9,.4)); }
+.final h3 { color:var(--gold2) !important; margin:0 0 4px; }
+.final div { color:#fff; font-weight:700; font-size:1.1rem; }
 
-    /* Calendar */
-    .cal-card { background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 14px; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; transition: all 0.3s ease; }
-    .cal-card:hover { border-color: #f59e0b; box-shadow: 0 4px 20px rgba(245, 158, 11, 0.25); }
-    .cal-next { border: 2px solid #f59e0b !important; background: linear-gradient(135deg, rgba(180, 83, 9, 0.25) 0%, rgba(30, 41, 59, 0.95) 100%) !important; box-shadow: 0 0 20px rgba(245, 158, 11, 0.3) !important; }
-    .cal-num { font-family: 'Outfit', sans-serif; font-size: 1.4rem; font-weight: 800; color: #facc15; min-width: 100px; }
-    .cal-desc { font-size: 1.1rem; font-weight: 700; color: #f8fafc; }
-    .cal-badge { background: #f59e0b; color: #0f172a; font-weight: 800; font-size: 0.8rem; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; margin-left: 10px; }
-    .cal-final { background: linear-gradient(135deg, #1e1b4b 0%, rgba(180, 83, 9, 0.4) 100%) !important; border: 2px solid #fbbf24 !important; box-shadow: 0 8px 30px rgba(251, 191, 36, 0.35) !important; padding: 20px !important; border-radius: 16px !important; text-align: center; margin-top: 20px; }
-    .cal-final-title { font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 800; color: #fbbf24; margin-bottom: 6px; letter-spacing: 1px; }
-    .cal-final-desc { font-size: 1.2rem; font-weight: 700; color: #ffffff; }
+/* Admin */
+.state { border-radius:12px; padding:12px 14px; margin:4px 0 10px; font-weight:600; font-size:.92rem; }
+.state.ok { background:rgba(34,197,94,.1); border:1px solid rgba(34,197,94,.45); color:#bbf7d0; }
+.state.pend { background:rgba(245,158,11,.08); border:1px solid rgba(245,158,11,.4); color:#fde68a; }
+.chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+.chips span { background:rgba(15,23,42,.8); border:1px solid rgba(148,163,184,.25); border-radius:999px; padding:3px 10px; font-size:.82rem; color:#e2e8f0; }
+.chips span b { color:#4ade80; }
+.summary { background:var(--card); border:1px dashed rgba(245,158,11,.5); border-radius:14px; padding:12px 14px; margin:8px 0; }
+.summary h5 { margin:0 0 4px; color:var(--gold2); font-size:.8rem; text-transform:uppercase; letter-spacing:.8px; }
 
-    /* Footer */
-    .app-footer {
-        text-align: center;
-        margin-top: 3rem;
-        padding: 1.2rem;
-        border-top: 1px solid rgba(245, 158, 11, 0.2);
-        color: #475569;
-        font-size: 0.85rem;
-        font-weight: 600;
-        letter-spacing: 0.5px;
-    }
-    .app-footer span { color: #f59e0b; }
+.empty { text-align:center; padding:28px; border:1px dashed rgba(245,158,11,.3); border-radius:14px; color:var(--muted); font-weight:600; }
+.foot { text-align:center; margin-top:2.5rem; padding:1rem; border-top:1px solid var(--line); color:#64748b; font-size:.8rem; font-weight:600; }
+.foot b { color:var(--gold); }
 
-    /* Mobile */
-    @media (max-width: 768px) {
-        .main-title { font-size: 1.4rem; }
-        .sub-title { font-size: 0.95rem; }
-        div[data-testid="stMetricValue"] { font-size: 1.3rem !important; }
-        .stTabs [data-baseweb="tab"], .stTabs button[role="tab"] { padding: 8px 14px !important; font-size: 0.9rem !important; border-radius: 10px !important; }
-        .cal-card { flex-direction: column; align-items: flex-start; gap: 6px; }
-        .rake-chip-val { font-size: 1.1rem; }
-        .leaderboard-table th, .leaderboard-row td { padding: 8px 4px; font-size: 0.8rem; }
-    }
+@media (max-width: 760px) {
+  .block-container { padding-top: 3.6rem !important; padding-left:.8rem !important; padding-right:.8rem !important; }
+  .hdr { gap:12px; padding:10px 12px; flex-wrap:wrap; }
+  .hdr-logo { width:58px; height:58px; }
+  .hdr-title { font-size:1.3rem; } .hdr-sub { font-size:.66rem; letter-spacing:1px; }
+  .hdr-next { margin-left:0; width:100%; text-align:left; border-left:none; border-top:1px solid var(--line); padding:8px 0 0; }
+  .hdr-next b, .hdr-next span { display:inline; } .hdr-next span::before { content:" · "; color:var(--muted); }
+  .podium { gap:8px; } .pod { padding:10px 6px; } .pod.first { padding:14px 6px; }
+  .pod .n { font-size:.95rem; } .pod.first .n { font-size:1.05rem; } .pod .p { font-size:1.15rem; } .pod.first .p { font-size:1.4rem; }
+  .pod .m { font-size:1.3rem; } .pod.first .m { font-size:1.7rem; }
+  .strip { grid-template-columns:repeat(2,1fr); }
+  .strip > div:nth-child(2) { border-right:none; } .strip > div:nth-child(-n+2) { border-bottom:1px solid var(--line); }
+  .strip b { font-size:1.1rem; }
+  .lb { display:none !important; } .lbm { display:block !important; }
+  .prizes { grid-template-columns:1fr; } .rakes { grid-template-columns:repeat(2,1fr); }
+  .cal { flex-direction:column; align-items:flex-start; gap:4px; }
+  .stTabs [role="tab"] { padding:6px 12px !important; } .stTabs [role="tab"] p { font-size:.85rem !important; }
+}
 </style>
 """, unsafe_allow_html=True)
 
-# Sidebar admin login
-st.sidebar.title("🔐 Acceso Administrador")
-if not st.session_state["is_admin"]:
-    input_pass = st.sidebar.text_input("Ingresa la clave de administrador:", type="password")
-    if st.sidebar.button("Ingresar como Admin"):
-        if ADMIN_PASSWORD and input_pass == ADMIN_PASSWORD:
-            st.session_state["is_admin"] = True
-            st.sidebar.success("¡Acceso concedido!")
+# ─── ADMIN (sidebar) ─────────────────────────────────────────────────────────
+with st.sidebar:
+    st.markdown("### Acceso administrador")
+    if not st.session_state["is_admin"]:
+        pwd = st.text_input("Clave de administrador", type="password")
+        if st.button("Ingresar", use_container_width=True):
+            if ADMIN_PASSWORD and pwd == ADMIN_PASSWORD:
+                st.session_state["is_admin"] = True
+                st.rerun()
+            else:
+                st.error("Clave incorrecta")
+    else:
+        st.success("Modo administrador activo")
+        if st.button("Salir de modo admin", use_container_width=True):
+            st.session_state["is_admin"] = False
             st.rerun()
-        else:
-            st.sidebar.error("Clave incorrecta")
-else:
-    st.sidebar.success("🟢 MODO ADMINISTRADOR ACTIVO")
-    if st.sidebar.button("🔒 Salir de Modo Admin"):
-        st.session_state["is_admin"] = False
-        st.rerun()
 
-# Header
-logo_html = f'<img src="data:image/png;base64,{logo_b64}" style="max-width:80px !important; width:80px !important; height:auto !important; display:block; margin:4px auto 6px auto; filter:drop-shadow(0 0 10px rgba(245,158,11,0.4));" alt="Logo">' if logo_b64 else ''
-st.markdown(f"""
-<div class="main-header">
-    <h1 class="main-title">BINGO POKER CLUB 2026</h1>
-    {logo_html}
-    <div class="sub-title">Liga Oficial de Poker · Chile</div>
-</div>
-""", unsafe_allow_html=True)
-
+# ─── DATOS ───────────────────────────────────────────────────────────────────
 try:
     data = data_manager.load_data()
 except Exception as e:
-    st.error(f"❌ No se pudieron cargar los datos: {e}")
+    st.error(f"No se pudieron cargar los datos: {e}")
     st.stop()
+
 df_pos = data["df_posiciones"]
 rake_dict = data["rake_dict"]
 total_rake = data["total_rake"]
-camp_total = data.get("camp_total", total_rake * 0.50)
-mf_total = data.get("mf_total", total_rake * 0.40)
-gastos_mf = data.get("gastos_mf", total_rake * 0.10)
-payouts = data["payouts"]
-subheaders = data["subheaders"]
+camp_total, mf_total, gastos_mf = data["camp_total"], data["mf_total"], data["gastos_mf"]
+fechas_info = data["fechas_info"]
+schedule_data = data.get("schedule_data", [])
+evento_final = data.get("evento_final", "")
 
-# 4 Metric Cards — Portada compacta
-c1, c2, c3, c4 = st.columns(4)
-with c1:
-    st.metric("💰 Rake Total", fmt_money(total_rake))
-with c2:
-    st.metric("🏆 Campeonato (50%)", fmt_money(camp_total))
-with c3:
-    st.metric("🃏 Mesa Final (40%)", fmt_money(mf_total))
-with c4:
-    st.metric("🧾 Fondo Organización (10%)", fmt_money(gastos_mf))
+jugadas = [n for n in range(1, N_FECHAS + 1) if fechas_info[n]["registrada"]]
+ultima = max(jugadas) if jugadas else None
+next_ev = next((s for s in schedule_data if s.get("next")), None)
+has_data = (not df_pos.empty) and df_pos["Total"].sum() > 0
 
-st.write("---")
-
-# Tabs
-if st.session_state["is_admin"]:
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["🏆 Posiciones", "📝 Registrar Fecha", "💵 Rake & Pozos", "⚙️ Jugadores", "📅 Calendario"])
+# ─── HEADER ──────────────────────────────────────────────────────────────────
+logo_html = f'<img class="hdr-logo" src="data:image/png;base64,{logo_b64}" alt="Logo">' if logo_b64 else ""
+if next_ev:
+    next_html = f'<div class="hdr-next"><small>Próxima fecha</small><b>{esc(next_ev["fecha"])}</b><span>{esc(next_ev["desc"])}</span></div>'
+elif evento_final:
+    next_html = f'<div class="hdr-next"><small>Gran final</small><b>Mesa Final</b><span>{esc(evento_final)}</span></div>'
 else:
-    tab1, tab3, tab5 = st.tabs(["🏆 Posiciones", "💵 Rake & Pozos", "📅 Calendario"])
-    tab2, tab4 = None, None
-
-# ─── TAB 1: POSICIONES ──────────────────────────────────────────────────────
-with tab1:
-    st.subheader("🏆 Tabla de Posiciones General")
-    st.caption("Puntaje acumulado fecha a fecha · Temporada 2026 (10 Fechas)")
-
-    # Check if all totals are 0
-    has_data = df_pos["Total"].sum() > 0
-
-    if not has_data:
-        st.markdown("""
-        <div class="empty-state">
-            <span class="empty-icon">🎴</span>
-            Aún no se han registrado resultados.<br>El ranking aparecerá aquí luego de la primera fecha.
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        lead_html = '<table class="leaderboard-table"><thead><tr><th>Jugador</th>'
-        for f in FECHAS_STANDARD:
-            lead_html += f'<th>{f}</th>'
-        lead_html += '<th>Total</th></tr></thead><tbody>'
-
-        medals_map = {1: "🥇", 2: "🥈", 3: "🥉"}
-        for idx, row in df_pos.iterrows():
-            pos_num = idx + 1
-            row_cls = "leaderboard-row rank-1" if pos_num == 1 else ("leaderboard-row rank-2" if pos_num == 2 else ("leaderboard-row rank-3" if pos_num == 3 else "leaderboard-row"))
-            medal = medals_map.get(pos_num, f"{pos_num}º")
-            lead_html += f'<tr class="{row_cls}"><td>{medal} {row["Jugador"]}</td>'
-            for f in FECHAS_STANDARD:
-                val = int(row.get(f, 0))
-                val_cls = "pts-active" if val > 0 else "pts-zero"
-                cell_txt = str(val) if val > 0 else "—"
-                lead_html += f'<td class="{val_cls}">{cell_txt}</td>'
-            lead_html += f'<td>{int(row["Total"])} pts</td></tr>'
-        lead_html += '</tbody></table>'
-        st.markdown(lead_html, unsafe_allow_html=True)
-
-    st.write("---")
-    st.subheader("📸 Reporte para WhatsApp")
-    st.caption("Genera y descarga la imagen oficial optimizada para compartir en grupos de WhatsApp.")
-    col_img_btn, _ = st.columns([1, 1])
-    with col_img_btn:
-        if st.button("🖼️ Generar Imagen HD para WhatsApp"):
-            img_bytes = report_generator.generate_report_image(data)
-            st.session_state["report_img"] = img_bytes
-            st.success("¡Imagen generada con éxito!")
-    if "report_img" in st.session_state:
-        st.image(st.session_state["report_img"], caption="Reporte Oficial Bingo Poker Club 2026", use_container_width=True)
-        st.download_button(label="📥 Descargar PNG para WhatsApp", data=st.session_state["report_img"], file_name="bingo_poker_club_posiciones.png", mime="image/png", use_container_width=True)
-
-# ─── TAB 3: RAKE & POZOS ────────────────────────────────────────────────────
-with tab3:
-    st.subheader("💰 Distribución de Premios")
-    st.caption("Desglose de pozos según el rake acumulado de la temporada.")
-
-    st.markdown(f"""
-    <div class="prize-container">
-        <div class="prize-card">
-            <div class="prize-card-title">🏆 PREMIOS CAMPEONATO (50%)</div>
-            <div class="prize-card-total">{fmt_money(camp_total)}</div>
-            <div class="prize-row"><span>🥇 1º Lugar (50%)</span><strong>{fmt_money(camp_total * 0.50)}</strong></div>
-            <div class="prize-row"><span>🥈 2º Lugar (30%)</span><strong>{fmt_money(camp_total * 0.30)}</strong></div>
-            <div class="prize-row"><span>🥉 3º Lugar (20%)</span><strong>{fmt_money(camp_total * 0.20)}</strong></div>
-        </div>
-        <div class="prize-card">
-            <div class="prize-card-title">🃏 PREMIOS MESA FINAL (40%)</div>
-            <div class="prize-card-total">{fmt_money(mf_total)}</div>
-            <div class="prize-row"><span>🥇 1º Lugar (50%)</span><strong>{fmt_money(mf_total * 0.50)}</strong></div>
-            <div class="prize-row"><span>🥈 2º Lugar (30%)</span><strong>{fmt_money(mf_total * 0.30)}</strong></div>
-            <div class="prize-row"><span>🥉 3º Lugar (20%)</span><strong>{fmt_money(mf_total * 0.20)}</strong></div>
-        </div>
-        <div class="prize-card">
-            <div class="prize-card-title">🧾 FONDO ORGANIZACIÓN (10%)</div>
-            <div class="prize-card-total">{fmt_money(gastos_mf)}</div>
-            <div class="prize-row"><span>Logística & Organización</span><strong>10% Rake</strong></div>
-            <div class="prize-row"><span>Acumulado temporada</span><strong>{fmt_money(gastos_mf)}</strong></div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.write("---")
-    st.subheader("💵 Control de Rake por Fecha")
-    st.caption("Monto recaudado en cada fecha de la temporada.")
-
-    chips_html = '<div class="rake-grid">'
-    for i in range(1, 11):
-        f_key = f"F{i}"
-        val = rake_dict.get(f_key, 0)
-        is_active = val > 0
-        card_cls = "rake-chip rake-chip-active" if is_active else "rake-chip"
-        badge_cls = "rake-status-badge status-ok" if is_active else "rake-status-badge status-wait"
-        status_txt = "Recaudado" if is_active else "Pendiente"
-        val_txt = fmt_money(val) if is_active else "$0"
-        chips_html += f'<div class="{card_cls}"><div class="rake-chip-title">Fecha {i:02d}</div><div class="rake-chip-val">{val_txt}</div><div class="{badge_cls}">{status_txt}</div></div>'
-    chips_html += '</div>'
-    st.markdown(chips_html, unsafe_allow_html=True)
-
-# ─── TAB 5: CALENDARIO ──────────────────────────────────────────────────────
-with tab5:
-    st.subheader("📅 Calendario Oficial 2026 – 2027")
-    st.caption("Programación de la temporada.")
-
-    schedule_data = data.get("schedule_data", [])
-    evento_final = data.get("evento_final", "Sábado 09 de Enero 2027 desde las 14 horas")
-
-    if not schedule_data:
-        st.markdown('<div class="empty-state"><span class="empty-icon">📅</span>No hay fechas pendientes en el calendario.</div>', unsafe_allow_html=True)
-    else:
-        for s in schedule_data:
-            card_class = "cal-card cal-next" if s.get("next") else "cal-card"
-            badge_html = '<span class="cal-badge">🔥 Próximo Torneo</span>' if s.get("next") else ''
-            st.markdown(f'<div class="{card_class}"><div class="cal-num">{s["fecha"]} {badge_html}</div><div class="cal-desc">🗓️ {s["desc"]}</div></div>', unsafe_allow_html=True)
-
-    st.markdown(f"""
-    <div class="cal-final">
-        <div class="cal-final-title">🏆 GRAN EVENTO MESA FINAL</div>
-        <div class="cal-final-desc">🗓️ {evento_final}</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-# ─── TAB 2: REGISTRAR FECHA (ADMIN) ─────────────────────────────────────────
-if st.session_state["is_admin"] and tab2:
-    with tab2:
-        st.subheader("📝 Ingreso de Resultados por Fecha")
-        fecha_num = st.selectbox("Seleccionar Fecha", options=FECHAS_STANDARD, index=0)
-        f_index = int(fecha_num) - 1
-        tourn_type = st.selectbox("Tipo de Torneo", options=list(data_manager.POINTS_RULES.keys()), index=1)
-        sub_code = "FR" if "Full ring" in tourn_type else ("SH" if "Shorthanded" in tourn_type else "MM")
-        if "Main Event" in tourn_type:
-            sub_code = "ME-" + sub_code
-        current_rake = rake_dict.get(f"F{int(fecha_num)}", 0)
-        new_rake = st.number_input(f"Rake Recaudado en Fecha {fecha_num} ($)", min_value=0, value=int(current_rake), step=1000)
-
-        all_players = df_pos["Jugador"].tolist()
-        NA = "-- Seleccionar --"
-
-        # ── Auto-reset selecciones al cambiar de fecha ──────────────────────
-        last_fecha_key = "reg_last_fecha"
-        if st.session_state.get(last_fecha_key) != fecha_num:
-            # La fecha cambió → limpiar todas las posiciones anteriores
-            for prev_r in range(1, 6):
-                for prev_f in FECHAS_STANDARD:
-                    k = f"reg_pos{prev_r}_{prev_f}"
-                    if k in st.session_state:
-                        del st.session_state[k]
-            st.session_state[last_fecha_key] = fecha_num
-
-        # Inicializar claves si no existen
-        for r in range(1, 6):
-            key = f"reg_pos{r}_{fecha_num}"
-            if key not in st.session_state:
-                st.session_state[key] = NA
-
-        # Botón limpiar manual
-        col_lbl, col_btn = st.columns([3, 1])
-        with col_lbl:
-            st.write("#### Asignación de Posiciones (1° al 5° lugar)")
-        with col_btn:
-            if st.button("🔄 Limpiar", help="Borra todas las selecciones"):
-                for r in range(1, 6):
-                    k = f"reg_pos{r}_{fecha_num}"
-                    if k in st.session_state:
-                        del st.session_state[k]
-                st.rerun()
-
-        # Dropdowns en cascada: cada uno excluye los ya elegidos antes
-        selections = []
-        labels = ["🥇 1er Lugar", "🥈 2do Lugar", "🥉 3er Lugar", "4to Lugar", "5to Lugar"]
-        for r in range(1, 6):
-            key = f"reg_pos{r}_{fecha_num}"
-            already_picked = {
-                st.session_state[f"reg_pos{prev}_{fecha_num}"]
-                for prev in range(1, r)
-                if st.session_state.get(f"reg_pos{prev}_{fecha_num}", NA) != NA
-            }
-            available = [NA] + [p for p in all_players if p not in already_picked]
-            current_val = st.session_state.get(key, NA)
-            safe_idx = available.index(current_val) if current_val in available else 0
-            sel = st.selectbox(labels[r - 1], options=available, key=key, index=safe_idx)
-            selections.append(sel)
-
-        if st.button("💾 Guardar y Actualizar Fecha"):
-            pts_rule = data_manager.POINTS_RULES[tourn_type]
-            resultados = [
-                {"jugador": p_name, "puntos": pts_rule.get(rank_idx + 1, 0)}
-                for rank_idx, p_name in enumerate(selections)
-                if p_name and p_name != NA
-            ]
-            with st.spinner("Guardando..."):
-                ok, err = data_manager.save_fecha(fecha_num, tourn_type, sub_code, new_rake, resultados)
-            if ok:
-                st.session_state.pop("report_img", None)
-                st.success(f"✅ ¡Fecha {fecha_num} guardada exitosamente!")
-                st.rerun()
-            else:
-                st.error(f"❌ Error al guardar: {err}")
-
-
-# ─── TAB 4: JUGADORES (ADMIN) ───────────────────────────────────────────────
-if st.session_state["is_admin"] and tab4:
-    with tab4:
-        st.subheader("👤 Administración de Jugadores")
-        new_p_name = st.text_input("Nombre de Nuevo Jugador")
-        if st.button("➕ Agregar Jugador"):
-            if new_p_name and new_p_name.strip():
-                p_clean = new_p_name.strip()
-                if p_clean not in df_pos["Jugador"].values:
-                    ok, err = data_manager.add_player(p_clean)
-                    if ok:
-                        st.success(f"✅ Jugador '{p_clean}' agregado con éxito.")
-                        st.rerun()
-                    else:
-                        st.error(f"❌ Error al guardar jugador: {err}")
-                else:
-                    st.warning("El jugador ya existe.")
-
-# ─── FOOTER ─────────────────────────────────────────────────────────────────
-st.markdown("""
-<div class="app-footer">
-    Temporada <span>2026</span> · <span>Bingo Poker Club</span> · Liga Oficial de Poker Chile 🃏<br>
-    <small style="opacity:0.5;">Datos actualizados en tiempo real</small>
+    next_html = ""
+st.markdown(f"""
+<div class="hdr">
+  {logo_html}
+  <div><div class="hdr-title">Bingo Poker Club</div><div class="hdr-sub">Liga de Poker · Temporada 2026</div></div>
+  {next_html}
 </div>
 """, unsafe_allow_html=True)
+
+# ─── PODIO + FRANJA DE POZOS ─────────────────────────────────────────────────
+if has_data:
+    top = df_pos.head(3).to_dict("records")
+    lead = int(top[0]["Total"])
+
+    def pod(i, cls=""):
+        if i >= len(top):
+            return '<div class="pod"></div>'
+        p = top[i]
+        gap = lead - int(p["Total"])
+        g = "Líder" if i == 0 else (f"a {gap} pts" if gap else "Empatado")
+        return (f'<div class="pod {cls}"><div class="m">{MEDALS[i + 1]}</div><div class="n">{esc(p["Jugador"])}</div>'
+                f'<div class="p">{int(p["Total"])} pts</div><div class="g">{g}</div></div>')
+
+    st.markdown(f'<div class="podium">{pod(1)}{pod(0, "first")}{pod(2)}</div>', unsafe_allow_html=True)
+
+st.markdown(f"""
+<div class="strip">
+  <div class="hl"><small>Rake total</small><b>{fmt_money(total_rake)}</b></div>
+  <div><small>Campeonato · 50%</small><b>{fmt_money(camp_total)}</b></div>
+  <div><small>Mesa Final · 40%</small><b>{fmt_money(mf_total)}</b></div>
+  <div><small>Organización · 10%</small><b>{fmt_money(gastos_mf)}</b></div>
+</div>
+""", unsafe_allow_html=True)
+
+# ─── TABS ────────────────────────────────────────────────────────────────────
+if st.session_state["is_admin"]:
+    t_pos, t_poz, t_cal, t_reg, t_jug = st.tabs(["Posiciones", "Pozos", "Calendario", "Registrar fecha", "Jugadores"])
+else:
+    t_pos, t_poz, t_cal = st.tabs(["Posiciones", "Pozos", "Calendario"])
+    t_reg = t_jug = None
+
+# ─── POSICIONES ──────────────────────────────────────────────────────────────
+with t_pos:
+    st.markdown(f'<div class="sec-title">Tabla de posiciones</div>'
+                f'<div class="sec-cap">{len(jugadas)} de {N_FECHAS} fechas jugadas · puntaje acumulado</div>', unsafe_allow_html=True)
+    if not has_data:
+        st.markdown('<div class="empty">Aún no hay resultados. El ranking aparece después de la primera fecha.</div>', unsafe_allow_html=True)
+    else:
+        # Escritorio: tabla con solo las fechas jugadas
+        th = "".join(
+            f'<th>{n:02d}<small>{esc(fechas_info[n]["sub"]) or "&nbsp;"}</small></th>' for n in jugadas
+        )
+        rows = ""
+        cards = ""
+        for idx, r in df_pos.iterrows():
+            pos = idx + 1
+            cls = f"r{pos}" if pos <= 3 else ""
+            badge = MEDALS.get(pos, f"{pos}º")
+            tds = ""
+            chips = ""
+            for n in jugadas:
+                v = int(r.get(f"{n:02d}", 0))
+                extra = " last" if n == ultima else ""
+                tds += f'<td class="{"pt" if v else "z"}{extra}">{v if v else "·"}</td>'
+                chips += f'<span>F{n:02d} <b>{v}</b></span>' if v else f'<span>F{n:02d} –</span>'
+            name = esc(r["Jugador"])
+            tot = int(r["Total"])
+            rows += f'<tr class="{cls}"><td>{badge}</td><td class="l">{name}</td>{tds}<td>{tot}</td></tr>'
+            lv = int(r.get(f"{ultima:02d}", 0)) if ultima else 0
+            lf = f'<span class="lf">+{lv} F{ultima:02d}</span>' if lv else ""
+            cards += (f'<details class="{cls}"><summary><span class="pos">{badge}</span><span class="nm">{name}</span>{lf}'
+                      f'<span class="tt">{tot} pts</span></summary><div class="det">{chips}</div></details>')
+        st.markdown(
+            f'<table class="lb"><thead><tr><th></th><th class="l">Jugador</th>{th}<th>Total</th></tr></thead>'
+            f'<tbody>{rows}</tbody></table><div class="lbm">{cards}</div>',
+            unsafe_allow_html=True,
+        )
+        st.caption("En el celular, toca un jugador para ver sus puntos por fecha.")
+
+    st.markdown('<div class="sec-title" style="margin-top:1.4rem">Imagen para WhatsApp</div>'
+                '<div class="sec-cap">Genera la imagen oficial de la tabla para compartir en el grupo.</div>', unsafe_allow_html=True)
+    if st.button("Generar imagen"):
+        st.session_state["report_img"] = report_generator.generate_report_image(data)
+    if "report_img" in st.session_state:
+        st.image(st.session_state["report_img"], use_container_width=True)
+        st.download_button("Descargar PNG", data=st.session_state["report_img"],
+                           file_name="bingo_poker_club_posiciones.png", mime="image/png", use_container_width=True)
+
+# ─── POZOS ───────────────────────────────────────────────────────────────────
+with t_poz:
+    st.markdown('<div class="sec-title">Distribución de premios</div>'
+                '<div class="sec-cap">Según el rake acumulado de la temporada.</div>', unsafe_allow_html=True)
+    st.markdown(f"""
+    <div class="prizes">
+      <div class="prize"><h4>Campeonato · 50%</h4><div class="tot">{fmt_money(camp_total)}</div>
+        <div class="row"><span>🥇 1º lugar (50%)</span><b>{fmt_money(camp_total * .5)}</b></div>
+        <div class="row"><span>🥈 2º lugar (30%)</span><b>{fmt_money(camp_total * .3)}</b></div>
+        <div class="row"><span>🥉 3º lugar (20%)</span><b>{fmt_money(camp_total * .2)}</b></div></div>
+      <div class="prize"><h4>Mesa Final · 40%</h4><div class="tot">{fmt_money(mf_total)}</div>
+        <div class="row"><span>🥇 1º lugar (50%)</span><b>{fmt_money(mf_total * .5)}</b></div>
+        <div class="row"><span>🥈 2º lugar (30%)</span><b>{fmt_money(mf_total * .3)}</b></div>
+        <div class="row"><span>🥉 3º lugar (20%)</span><b>{fmt_money(mf_total * .2)}</b></div></div>
+      <div class="prize"><h4>Organización · 10%</h4><div class="tot">{fmt_money(gastos_mf)}</div>
+        <div class="row"><span>Logística y organización</span><b>10% del rake</b></div></div>
+    </div>""", unsafe_allow_html=True)
+
+    st.markdown('<div class="sec-title">Rake por fecha</div>', unsafe_allow_html=True)
+    chips = ""
+    for n in range(1, N_FECHAS + 1):
+        v = rake_dict.get(f"F{n}", 0)
+        ok = fechas_info[n]["registrada"]
+        chips += f'<div class="rk {"ok" if ok else "pend"}"><small>Fecha {n:02d}</small><b>{fmt_money(v) if ok else "Pendiente"}</b></div>'
+    st.markdown(f'<div class="rakes">{chips}</div>', unsafe_allow_html=True)
+
+# ─── CALENDARIO ──────────────────────────────────────────────────────────────
+with t_cal:
+    st.markdown('<div class="sec-title">Calendario 2026 – 2027</div>'
+                '<div class="sec-cap">Fechas que quedan de la temporada.</div>', unsafe_allow_html=True)
+    if not schedule_data:
+        st.markdown('<div class="empty">No quedan fechas pendientes.</div>', unsafe_allow_html=True)
+    for s in schedule_data:
+        badge = '<span class="badge">Próxima</span>' if s.get("next") else ""
+        st.markdown(f'<div class="cal {"next" if s.get("next") else ""}"><div class="f">{esc(s["fecha"])}{badge}</div>'
+                    f'<div class="d">{esc(s["desc"])}</div></div>', unsafe_allow_html=True)
+    if evento_final:
+        st.markdown(f'<div class="final"><h3>🏆 Gran Evento Mesa Final</h3><div>{esc(evento_final)}</div></div>', unsafe_allow_html=True)
+
+# ─── REGISTRAR FECHA (ADMIN) ─────────────────────────────────────────────────
+if t_reg is not None:
+    with t_reg:
+        # Tras guardar/borrar: limpiar estado de esa fecha y saltar a la próxima pendiente
+        done = st.session_state.pop("reg_done", None)
+        if done is not None:
+            for k in [k for k in st.session_state.keys() if str(k).endswith(f"_{done}")]:
+                del st.session_state[k]
+            st.session_state.pop("reg_fecha", None)
+        if "reg_msg" in st.session_state:
+            st.success(st.session_state.pop("reg_msg"))
+
+        pendientes = [n for n in range(1, N_FECHAS + 1) if not fechas_info[n]["registrada"]]
+        default_n = pendientes[0] if pendientes else N_FECHAS
+
+        def lbl(n):
+            return f"Fecha {n:02d}  ·  ✅ registrada" if fechas_info[n]["registrada"] else f"Fecha {n:02d}  ·  ⏳ pendiente"
+
+        st.markdown('<div class="sec-title">Registrar resultados</div>'
+                    '<div class="sec-cap">Por defecto se abre la próxima fecha pendiente. Las fechas registradas quedan bloqueadas.</div>',
+                    unsafe_allow_html=True)
+        n = st.selectbox("Fecha", options=list(range(1, N_FECHAS + 1)), index=default_n - 1, format_func=lbl, key="reg_fecha")
+        info = fechas_info[n]
+        col = f"{n:02d}"
+        actuales = df_pos[df_pos[col] > 0].sort_values(col, ascending=False) if col in df_pos else df_pos.iloc[0:0]
+
+        locked = False
+        if info["registrada"]:
+            chips = "".join(f'<span>{esc(r["Jugador"])} <b>{int(r[col])}</b></span>' for _, r in actuales.iterrows()) or "<span>Sin puntos</span>"
+            st.markdown(f'<div class="state ok">✅ Fecha {n:02d} ya registrada · {esc(info["tipo"] or info["sub"] or "tipo sin dato")} · '
+                        f'rake {fmt_money(info["rake"])}<div class="chips">{chips}</div></div>', unsafe_allow_html=True)
+            editing = st.toggle("Corregir esta fecha", key=f"reg_edit_{n}",
+                                help="Actívalo solo si necesitas cambiar una fecha que ya se cargó.")
+            locked = not editing
+        else:
+            st.markdown(f'<div class="state pend">⏳ Fecha {n:02d} pendiente. Completa los datos y guarda.</div>', unsafe_allow_html=True)
+
+        tipos = list(data_manager.POINTS_RULES.keys())
+        tipo_idx = tipos.index(info["tipo"]) if info["tipo"] in tipos else 1
+        c1, c2 = st.columns(2)
+        with c1:
+            tipo = st.selectbox("Tipo de torneo", tipos, index=tipo_idx, key=f"reg_tipo_{n}", disabled=locked)
+        with c2:
+            rake = st.number_input("Rake recaudado ($)", min_value=0, step=1000, value=int(info["rake"]),
+                                   key=f"reg_rake_{n}", disabled=locked)
+        sub_code = "FR" if "Full ring" in tipo else ("SH" if "Shorthanded" in tipo else "MM")
+        if "Main Event" in tipo:
+            sub_code = "ME-" + sub_code
+
+        # Posiciones: precargadas con lo guardado (si existe)
+        players = df_pos["Jugador"].tolist()
+        pre = actuales["Jugador"].tolist()
+        for r in range(1, 6):
+            k = f"reg_p{r}_{n}"
+            if k not in st.session_state:
+                st.session_state[k] = pre[r - 1] if r - 1 < len(pre) else NA
+
+        def limpiar(fn=n):
+            for r in range(1, 6):
+                st.session_state[f"reg_p{r}_{fn}"] = NA
+
+        st.markdown("**Posiciones (1º a 5º)**")
+        rule = data_manager.POINTS_RULES[tipo]
+        labels = ["🥇 1º lugar", "🥈 2º lugar", "🥉 3º lugar", "4º lugar", "5º lugar"]
+        selections = []
+        cols = st.columns(5)
+        for r in range(1, 6):
+            k = f"reg_p{r}_{n}"
+            picked = {s for s in selections if s != NA}
+            avail = [NA] + [p for p in players if p not in picked]
+            if st.session_state.get(k) not in avail:
+                st.session_state[k] = NA
+            with cols[r - 1]:
+                selections.append(st.selectbox(f"{labels[r - 1]} · {rule.get(r, 0)} pts", avail, key=k, disabled=locked))
+
+        resultados = [{"jugador": p, "puntos": rule.get(i + 1, 0)} for i, p in enumerate(selections) if p != NA]
+
+        if resultados:
+            chips = "".join(f'<span>{i + 1}º {esc(r["jugador"])} <b>+{r["puntos"]}</b></span>' for i, r in enumerate(resultados))
+            st.markdown(f'<div class="summary"><h5>Resumen antes de guardar</h5>Fecha {n:02d} · {esc(tipo)} · rake {fmt_money(rake)}'
+                        f'<div class="chips">{chips}</div></div>', unsafe_allow_html=True)
+
+        b1, b2, _ = st.columns([2, 1, 3])
+        with b1:
+            save = st.button("💾 Guardar fecha" if not info["registrada"] else "💾 Guardar corrección",
+                             disabled=locked or not resultados, use_container_width=True)
+        with b2:
+            st.button("Limpiar", on_click=limpiar, disabled=locked, use_container_width=True)
+
+        if save:
+            with st.spinner("Guardando..."):
+                ok, err = data_manager.save_fecha(n, tipo, sub_code, rake, resultados)
+            if ok:
+                st.session_state.pop("report_img", None)
+                st.session_state["reg_done"] = n
+                st.session_state["reg_msg"] = f"✅ Fecha {n:02d} guardada."
+                st.rerun()
+            else:
+                st.error(f"Error al guardar: {err}")
+
+        if info["registrada"] and not locked:
+            with st.expander("🗑️ Borrar esta fecha"):
+                st.warning(f"Se borran los puntos y el rake de la Fecha {n:02d} y vuelve a quedar pendiente.")
+                conf = st.checkbox(f"Sí, quiero borrar la Fecha {n:02d}", key=f"reg_delconf_{n}")
+                if st.button("Borrar fecha", disabled=not conf, key=f"reg_del_{n}"):
+                    ok, err = data_manager.delete_fecha(n)
+                    if ok:
+                        st.session_state.pop("report_img", None)
+                        st.session_state["reg_done"] = n
+                        st.session_state["reg_msg"] = f"🗑️ Fecha {n:02d} borrada."
+                        st.rerun()
+                    else:
+                        st.error(f"Error al borrar: {err}")
+
+# ─── JUGADORES (ADMIN) ───────────────────────────────────────────────────────
+if t_jug is not None:
+    with t_jug:
+        st.markdown('<div class="sec-title">Jugadores</div>', unsafe_allow_html=True)
+        st.markdown('<div class="chips">' + "".join(f"<span>{esc(p)}</span>" for p in df_pos["Jugador"]) + "</div>",
+                    unsafe_allow_html=True)
+        with st.form("add_player", clear_on_submit=True):
+            nuevo = st.text_input("Nombre del nuevo jugador")
+            if st.form_submit_button("➕ Agregar jugador"):
+                nombre = (nuevo or "").strip()
+                if not nombre:
+                    st.warning("Escribe un nombre.")
+                elif nombre.lower() in [p.lower() for p in df_pos["Jugador"]]:
+                    st.warning("Ese jugador ya existe.")
+                else:
+                    ok, err = data_manager.add_player(nombre)
+                    if ok:
+                        st.success(f"Jugador {nombre} agregado.")
+                        st.rerun()
+                    else:
+                        st.error(f"Error: {err}")
+
+st.markdown('<div class="foot">Temporada <b>2026</b> · <b>Bingo Poker Club</b> · Liga de Poker Chile</div>', unsafe_allow_html=True)

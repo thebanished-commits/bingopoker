@@ -1,234 +1,195 @@
+"""Imagen oficial para WhatsApp — mismo diseño que el sitio."""
 import os
 import io
 from PIL import Image, ImageDraw, ImageFont
 
-REL_LOGO = os.path.join(os.path.dirname(__file__), 'assets', 'logo.png')
-ALT_LOGO_PATH = r'C:\programas\poker\logo.jpeg'
+BASE = os.path.dirname(__file__)
+FONT_PATH = os.path.join(BASE, "assets", "fonts", "Montserrat.ttf")
+LOGO_CANDIDATES = [os.path.join(BASE, "assets", "logo.png"), os.path.join(BASE, "assets", "logo_small.png")]
 
-if os.path.exists(REL_LOGO):
-    LOGO_PATH = REL_LOGO
-elif os.path.exists(ALT_LOGO_PATH):
-    LOGO_PATH = ALT_LOGO_PATH
-else:
-    LOGO_PATH = None
+NAVY_TOP = (35, 32, 90)
+NAVY_BOT = (7, 11, 20)
+CARD = (24, 33, 52)
+CARD_ALT = (20, 28, 45)
+GOLD = (245, 158, 11)
+GOLD2 = (250, 204, 21)
+INK = (241, 245, 249)
+MUTED = (148, 163, 184)
+GREEN = (74, 222, 128)
+DIM = (51, 65, 85)
+ROW_HL = {1: (92, 56, 22), 2: (52, 62, 80), 3: (70, 45, 24)}
+MEDAL_COL = {1: (250, 204, 21), 2: (203, 213, 225), 3: (217, 119, 6)}
+
+_font_cache = {}
+
+
+def font(size, weight="Bold"):
+    key = (size, weight)
+    if key in _font_cache:
+        return _font_cache[key]
+    try:
+        f = ImageFont.truetype(FONT_PATH, size)
+        try:
+            f.set_variation_by_name(weight)
+        except Exception:
+            pass
+    except Exception:
+        try:
+            f = ImageFont.truetype("DejaVuSans-Bold.ttf", size)
+        except Exception:
+            f = ImageFont.load_default()
+    _font_cache[key] = f
+    return f
+
 
 def fmt_money(val):
     try:
-        return f"${int(val):,}".replace(",", ".")
+        return f"${int(round(val)):,}".replace(",", ".")
     except Exception:
         return "$0"
 
-def get_font(size, bold=False):
-    font_names = ["arialbd.ttf" if bold else "arial.ttf", 
-                  "segoeui.ttf", "tahoma.ttf"]
-    for name in font_names:
-        try:
-            return ImageFont.truetype(name, size)
-        except OSError:
-            continue
-    return ImageFont.load_default()
+
+def _text_w(d, txt, f):
+    b = d.textbbox((0, 0), txt, font=f)
+    return b[2] - b[0]
+
+
+def _center(d, cx, y, txt, f, fill):
+    d.text((cx - _text_w(d, txt, f) / 2, y), txt, font=f, fill=fill)
+
+
+def _right(d, rx, y, txt, f, fill):
+    d.text((rx - _text_w(d, txt, f), y), txt, font=f, fill=fill)
+
+
+def _circle_logo(size):
+    for p in LOGO_CANDIDATES:
+        if os.path.exists(p):
+            try:
+                im = Image.open(p).convert("RGBA").resize((size, size), Image.Resampling.LANCZOS)
+                mask = Image.new("L", (size * 4, size * 4), 0)
+                ImageDraw.Draw(mask).ellipse((0, 0, size * 4 - 1, size * 4 - 1), fill=255)
+                im.putalpha(mask.resize((size, size), Image.Resampling.LANCZOS))
+                return im
+            except Exception:
+                return None
+    return None
+
 
 def generate_report_image(data):
-    df_pos = data["df_posiciones"]
-    subheaders = data.get("subheaders", ["FR"] + [""] * 9)
+    df = data["df_posiciones"]
+    info = data.get("fechas_info", {})
+    jugadas = [n for n in range(1, 11) if info.get(n, {}).get("registrada")]
+    ultima = max(jugadas) if jugadas else None
     total_rake = data["total_rake"]
-    
-    # 50% Campeonato, 40% Mesa Final
-    camp_total = total_rake * 0.50
-    mf_total = total_rake * 0.40
-    
-    payouts = [
-        {"Pos": 1, "Campeonato": int(camp_total * 0.50), "Mesa Final": int(mf_total * 0.50)},
-        {"Pos": 2, "Campeonato": int(camp_total * 0.30), "Mesa Final": int(mf_total * 0.30)},
-        {"Pos": 3, "Campeonato": int(camp_total * 0.20), "Mesa Final": int(mf_total * 0.20)},
-    ]
-    
-    S = 2
-    
-    NAVY_HEADER = (27, 54, 93)
-    LIGHT_BLUE = (104, 151, 187)
-    TOTAL_BG = (140, 180, 214)
-    WHITE = (255, 255, 255)
-    BLACK = (0, 0, 0)
-    YELLOW = (255, 255, 0)
-    GRID_COLOR = (40, 40, 40)
-    
-    f_title = get_font(20 * S, bold=True)
-    f_header = get_font(13 * S, bold=True)
-    f_sub = get_font(11 * S, bold=True)
-    f_cell = get_font(12 * S, bold=True)
-    f_num = get_font(12 * S, bold=True)
-    
-    col_w_pos = 45 * S
-    col_w_name = 110 * S
-    col_w_fecha = 50 * S
-    col_w_f = 32 * S
-    col_w_tot = 55 * S
-    
-    n_fechas = 10
-    main_tbl_width = col_w_pos + col_w_name + col_w_fecha + (col_w_f * n_fechas) + col_w_tot
-    
-    row_h_title = 40 * S
-    row_h_hdr1 = 28 * S
-    row_h_hdr2 = 22 * S
-    row_h_data = 28 * S
-    
-    n_rows = max(len(df_pos), 7)
-    main_tbl_height = row_h_title + row_h_hdr1 + row_h_hdr2 + (row_h_data * n_rows)
-    
-    side_w = 260 * S
-    gap = 25 * S
-    
-    img_w = main_tbl_width + side_w + 320 * S
-    img_h = main_tbl_height + 40 * S
-    
-    img = Image.new("RGBA", (img_w, img_h), (255, 255, 255, 255))
-    draw = ImageDraw.Draw(img)
-    
-    x0 = 15 * S
-    y0 = 15 * S
-    
-    draw.rectangle([x0, y0, x0 + main_tbl_width, y0 + row_h_title], fill=NAVY_HEADER, outline=GRID_COLOR, width=S)
-    
-    bbox = draw.textbbox((0, 0), "Bingo Poker Club", font=f_title)
-    tw = bbox[2] - bbox[0]
-    th = bbox[3] - bbox[1]
-    draw.text((x0 + (main_tbl_width - tw) / 2, y0 + (row_h_title - th) / 2 - 2*S), "Bingo Poker Club", fill=YELLOW, font=f_title)
-    
-    y_h1 = y0 + row_h_title
-    
-    draw.rectangle([x0, y_h1, x0 + main_tbl_width - col_w_tot, y_h1 + row_h_hdr1 + row_h_hdr2], fill=LIGHT_BLUE, outline=GRID_COLOR, width=S)
-    draw.rectangle([x0 + main_tbl_width - col_w_tot, y_h1, x0 + main_tbl_width, y_h1 + row_h_hdr1 + row_h_hdr2], fill=TOTAL_BG, outline=GRID_COLOR, width=S)
-    
-    cx_pos = x0
-    cx_name = cx_pos + col_w_pos
-    cx_fecha = cx_name + col_w_name
-    cx_f0 = cx_fecha + col_w_fecha
-    
-    draw.text((cx_pos + 6*S, y_h1 + 10*S), "Pos.", fill=YELLOW, font=f_header)
-    draw.text((cx_name + 8*S, y_h1 + 10*S), "Jugador", fill=YELLOW, font=f_header)
-    draw.text((cx_fecha + 4*S, y_h1 + 10*S), "Fecha", fill=YELLOW, font=f_header)
-    
-    for i in range(10):
-        f_lbl = f"{i+1:02d}"
-        fx = cx_f0 + (i * col_w_f)
-        draw.text((fx + 6*S, y_h1 + 4*S), f_lbl, fill=YELLOW, font=f_header)
-        
-        sub_txt = subheaders[i] if i < len(subheaders) else ""
-        if sub_txt:
-            draw.text((fx + 5*S, y_h1 + row_h_hdr1 + 2*S), sub_txt, fill=WHITE, font=f_sub)
-            
-    draw.text((cx_f0 + 10 * col_w_f + 8*S, y_h1 + 10*S), "Total", fill=YELLOW, font=f_header)
-    
-    draw.line([cx_name, y_h1, cx_name, y_h1 + row_h_hdr1 + row_h_hdr2], fill=GRID_COLOR, width=S)
-    draw.line([cx_fecha, y_h1, cx_fecha, y_h1 + row_h_hdr1 + row_h_hdr2], fill=GRID_COLOR, width=S)
-    draw.line([cx_f0, y_h1, cx_f0, y_h1 + row_h_hdr1 + row_h_hdr2], fill=GRID_COLOR, width=S)
-    for i in range(1, 11):
-        fx = cx_f0 + (i * col_w_f)
-        draw.line([fx, y_h1, fx, y_h1 + row_h_hdr1 + row_h_hdr2], fill=GRID_COLOR, width=S)
-        
-    draw.line([cx_f0, y_h1 + row_h_hdr1, cx_f0 + 10 * col_w_f, y_h1 + row_h_hdr1], fill=GRID_COLOR, width=S)
-    
-    y_curr = y_h1 + row_h_hdr1 + row_h_hdr2
-    
-    records = df_pos.to_dict('records')
-    for r_idx in range(n_rows):
-        p = records[r_idx] if r_idx < len(records) else None
-        
-        bg_col = WHITE
-        draw.rectangle([x0, y_curr, x0 + main_tbl_width - col_w_tot, y_curr + row_h_data], fill=bg_col, outline=GRID_COLOR, width=S)
-        draw.rectangle([x0 + main_tbl_width - col_w_tot, y_curr, x0 + main_tbl_width, y_curr + row_h_data], fill=TOTAL_BG, outline=GRID_COLOR, width=S)
-        
-        if p:
-            draw.text((cx_pos + 15*S, y_curr + 4*S), str(r_idx + 1), fill=BLACK, font=f_cell)
-            draw.text((cx_name + 8*S, y_curr + 4*S), str(p["Jugador"]), fill=BLACK, font=f_cell)
-            
-            for i in range(10):
-                f_key = f"{i+1:02d}"
-                val = p.get(f_key, 0)
-                val_str = str(int(val))
-                fx = cx_f0 + (i * col_w_f)
-                draw.text((fx + 8*S, y_curr + 4*S), val_str, fill=BLACK, font=f_num)
-                
-            tot_val = str(int(p.get("Total", 0)))
-            draw.text((cx_f0 + 10 * col_w_f + 12*S, y_curr + 4*S), tot_val, fill=BLACK, font=f_cell)
+    camp, mf = data["camp_total"], data["mf_total"]
+    next_ev = next((s for s in data.get("schedule_data", []) if s.get("next")), None)
+
+    W, M = 1080, 48
+    players = df.to_dict("records")
+    n_rows = max(len(players), 1)
+    ROW_H = 58
+    head_h, pod_h, tbl_head = 190, 0, 52
+    tbl_h = tbl_head + n_rows * (ROW_H + 6)
+    prize_h = 250
+    foot_h = 110
+    H = head_h + tbl_h + prize_h + foot_h + 60
+
+    img = Image.new("RGB", (W, H), NAVY_BOT)
+    d = ImageDraw.Draw(img)
+    # Fondo degradado vertical
+    for y in range(H):
+        t = min(1, y / (H * 0.55))
+        c = tuple(int(NAVY_TOP[i] * (1 - t) + NAVY_BOT[i] * t) for i in range(3))
+        d.line([(0, y), (W, y)], fill=c)
+
+    # ── Header
+    y = 40
+    logo = _circle_logo(120)
+    x_txt = M
+    if logo:
+        d.ellipse((M - 4, y - 4, M + 124, y + 124), fill=GOLD)
+        img.paste(logo, (M, y), logo)
+        x_txt = M + 150
+    d.text((x_txt, y + 14), "BINGO POKER CLUB", font=font(50, "ExtraBold"), fill=GOLD2)
+    d.text((x_txt, y + 76), "LIGA DE POKER · TEMPORADA 2026", font=font(22, "Bold"), fill=(203, 213, 225))
+    tag = f"Tabla tras la Fecha {ultima:02d}" if ultima else "Temporada por comenzar"
+    d.text((x_txt, y + 106), tag, font=font(20, "SemiBold"), fill=MUTED)
+    y = head_h
+
+    # ── Tabla
+    col_pos, col_name = 64, 230
+    col_tot = 120
+    avail = W - 2 * M - col_pos - col_name - col_tot
+    col_f = min(70, avail // max(len(jugadas), 1)) if jugadas else 0
+    x_pos = M
+    x_name = x_pos + col_pos
+    x_f0 = x_name + col_name
+    x_tot_r = W - M - 18
+
+    d.text((x_name + 14, y + 12), "JUGADOR", font=font(18, "ExtraBold"), fill=GOLD2)
+    for i, n in enumerate(jugadas):
+        cx = x_f0 + i * col_f + col_f / 2
+        _center(d, cx, y + 4, f"{n:02d}", font(18, "ExtraBold"), GOLD2)
+        sub = info[n].get("sub") or ""
+        if sub:
+            _center(d, cx, y + 28, sub, font(13, "Bold"), MUTED)
+    _right(d, x_tot_r, y + 12, "TOTAL", font(18, "ExtraBold"), GOLD2)
+    y += tbl_head
+
+    for idx, p in enumerate(players):
+        pos = idx + 1
+        bg = ROW_HL.get(pos, CARD if pos % 2 else CARD_ALT)
+        d.rounded_rectangle((M, y, W - M, y + ROW_H), radius=14, fill=bg,
+                            outline=GOLD if pos == 1 else None, width=2 if pos == 1 else 0)
+        cy = y + ROW_H / 2
+        if pos in MEDAL_COL:
+            r = 17
+            d.ellipse((x_pos + 30 - r, cy - r, x_pos + 30 + r, cy + r), fill=MEDAL_COL[pos])
+            _center(d, x_pos + 30, cy - 13, str(pos), font(22, "ExtraBold"), (17, 24, 39))
         else:
-            draw.text((cx_pos + 15*S, y_curr + 4*S), str(r_idx + 1), fill=BLACK, font=f_cell)
-            
-        draw.line([cx_name, y_curr, cx_name, y_curr + row_h_data], fill=GRID_COLOR, width=S)
-        draw.line([cx_fecha, y_curr, cx_fecha, y_curr + row_h_data], fill=GRID_COLOR, width=S)
-        draw.line([cx_f0, y_curr, cx_f0, y_curr + row_h_data], fill=GRID_COLOR, width=S)
-        for i in range(1, 11):
-            fx = cx_f0 + (i * col_w_f)
-            draw.line([fx, y_curr, fx, y_curr + row_h_data], fill=GRID_COLOR, width=S)
-            
-        y_curr += row_h_data
+            _center(d, x_pos + 30, cy - 13, str(pos), font(22, "Bold"), MUTED)
+        d.text((x_name + 14, cy - 15), str(p["Jugador"]), font=font(25, "Bold"), fill=INK)
+        for i, n in enumerate(jugadas):
+            v = int(p.get(f"{n:02d}", 0))
+            cx = x_f0 + i * col_f + col_f / 2
+            _center(d, cx, cy - 12, str(v) if v else "·", font(21, "Bold"), GREEN if v else DIM)
+        _right(d, x_tot_r, cy - 17, str(int(p.get("Total", 0))), font(31, "ExtraBold"), GOLD2)
+        y += ROW_H + 6
 
-    x_side = x0 + main_tbl_width + gap
-    y_side = y0
-    
-    draw.rectangle([x_side, y_side, x_side + side_w, y_side + row_h_hdr1], fill=NAVY_HEADER, outline=GRID_COLOR, width=S)
-    bbox = draw.textbbox((0, 0), "Ganancias Totales", font=f_header)
-    tw = bbox[2] - bbox[0]
-    draw.text((x_side + (side_w - tw)/2, y_side + 5*S), "Ganancias Totales", fill=YELLOW, font=f_header)
-    
-    y_side += row_h_hdr1
-    draw.rectangle([x_side, y_side, x_side + side_w, y_side + row_h_data], fill=WHITE, outline=GRID_COLOR, width=S)
-    val_str = fmt_money(total_rake)
-    bbox = draw.textbbox((0, 0), val_str, font=f_cell)
-    tw = bbox[2] - bbox[0]
-    draw.text((x_side + (side_w - tw)/2, y_side + 4*S), val_str, fill=BLACK, font=f_cell)
-    
-    y_side += row_h_data + 20 * S
-    
-    w_p_pos = 75 * S
-    w_p_camp = 95 * S
-    w_p_mf = 90 * S
-    
-    draw.rectangle([x_side, y_side, x_side + w_p_pos, y_side + row_h_hdr1], fill=NAVY_HEADER, outline=GRID_COLOR, width=S)
-    draw.rectangle([x_side + w_p_pos, y_side, x_side + w_p_pos + w_p_camp, y_side + row_h_hdr1], fill=NAVY_HEADER, outline=GRID_COLOR, width=S)
-    draw.rectangle([x_side + w_p_pos + w_p_camp, y_side, x_side + side_w, y_side + row_h_hdr1], fill=NAVY_HEADER, outline=GRID_COLOR, width=S)
-    
-    draw.text((x_side + 6*S, y_side + 5*S), "Posiciones", fill=YELLOW, font=f_header)
-    draw.text((x_side + w_p_pos + 4*S, y_side + 5*S), "Campeonato", fill=YELLOW, font=f_header)
-    draw.text((x_side + w_p_pos + w_p_camp + 8*S, y_side + 5*S), "Mesa Final", fill=YELLOW, font=f_header)
-    
-    y_side += row_h_hdr1
-    
-    for pay in payouts:
-        pos_num = str(pay["Pos"])
-        c_amt = fmt_money(pay["Campeonato"])
-        m_amt = fmt_money(pay["Mesa Final"])
-        
-        draw.rectangle([x_side, y_side, x_side + w_p_pos, y_side + row_h_data], fill=LIGHT_BLUE, outline=GRID_COLOR, width=S)
-        draw.rectangle([x_side + w_p_pos, y_side, x_side + side_w, y_side + row_h_data], fill=WHITE, outline=GRID_COLOR, width=S)
-        
-        draw.text((x_side + 30*S, y_side + 4*S), pos_num, fill=YELLOW, font=f_header)
-        
-        bbox_c = draw.textbbox((0, 0), c_amt, font=f_cell)
-        tw_c = bbox_c[2] - bbox_c[0]
-        draw.text((x_side + w_p_pos + w_p_camp - tw_c - 10*S, y_side + 4*S), c_amt, fill=BLACK, font=f_cell)
-        
-        bbox_m = draw.textbbox((0, 0), m_amt, font=f_cell)
-        tw_m = bbox_m[2] - bbox_m[0]
-        draw.text((x_side + side_w - tw_m - 10*S, y_side + 4*S), m_amt, fill=BLACK, font=f_cell)
-        
-        draw.line([x_side + w_p_pos + w_p_camp, y_side, x_side + w_p_pos + w_p_camp, y_side + row_h_data], fill=GRID_COLOR, width=S)
-        
-        y_side += row_h_data
+    # ── Pozos
+    y += 24
+    d.rounded_rectangle((M, y, W - M, y + prize_h - 30), radius=18, fill=CARD, outline=(92, 64, 20), width=2)
+    d.text((M + 28, y + 22), "RAKE TOTAL", font=font(18, "ExtraBold"), fill=MUTED)
+    d.text((M + 28, y + 46), fmt_money(total_rake), font=font(44, "ExtraBold"), fill=GOLD2)
+    d.text((M + 28, y + 110), f"{len(jugadas)} de 10 fechas jugadas", font=font(18, "SemiBold"), fill=MUTED)
 
-    x_logo = x_side + side_w + 20 * S
-    y_logo = y0
-    
-    if LOGO_PATH and os.path.exists(LOGO_PATH):
-        try:
-            logo_img = Image.open(LOGO_PATH).convert("RGBA")
-            logo_size = int(main_tbl_height * 0.95)
-            logo_img = logo_img.resize((logo_size, logo_size), Image.Resampling.LANCZOS)
-            img.paste(logo_img, (x_logo, y_logo + 5*S), logo_img)
-        except Exception as e:
-            print("Logo rendering error:", e)
+    def prize_col(x, title, total):
+        d.text((x, y + 22), title, font=font(18, "ExtraBold"), fill=GOLD2)
+        d.text((x, y + 46), fmt_money(total), font=font(28, "ExtraBold"), fill=INK)
+        for j, (lbl, pct) in enumerate([("1º", .5), ("2º", .3), ("3º", .2)]):
+            yy = y + 96 + j * 34
+            d.text((x, yy), lbl, font=font(20, "Bold"), fill=MUTED)
+            d.text((x + 50, yy), fmt_money(total * pct), font=font(22, "Bold"), fill=INK)
 
-    img_byte_arr = io.BytesIO()
-    img.save(img_byte_arr, format='PNG')
-    return img_byte_arr.getvalue()
+    prize_col(M + 380, "CAMPEONATO 50%", camp)
+    prize_col(M + 690, "MESA FINAL 40%", mf)
+    y += prize_h
+
+    # ── Footer
+    if next_ev:
+        txt = f"Próxima: {next_ev['fecha']} · {next_ev['desc']}"
+    elif data.get("evento_final"):
+        txt = f"Mesa Final: {data['evento_final']}"
+    else:
+        txt = ""
+    if txt:
+        tw = _text_w(d, txt, font(24, "Bold")) + 56
+        x0 = (W - tw) / 2
+        d.rounded_rectangle((x0, y, x0 + tw, y + 52), radius=26, fill=GOLD)
+        _center(d, W / 2, y + 12, txt, font(24, "Bold"), (17, 24, 39))
+    _center(d, W / 2, H - 44, "bingopoker.streamlit.app", font(18, "SemiBold"), MUTED)
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG", optimize=True)
+    return buf.getvalue()
