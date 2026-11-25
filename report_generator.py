@@ -1,4 +1,4 @@
-"""Imagen oficial para WhatsApp — mismo diseño que el sitio."""
+"""Imagen oficial para WhatsApp — pensada para leerse en el celular (vertical, letra grande)."""
 import os
 import io
 from PIL import Image, ImageDraw, ImageFont
@@ -7,69 +7,92 @@ BASE = os.path.dirname(__file__)
 FONT_PATH = os.path.join(BASE, "assets", "fonts", "Montserrat.ttf")
 LOGO_CANDIDATES = [os.path.join(BASE, "assets", "logo.png"), os.path.join(BASE, "assets", "logo_small.png")]
 
-NAVY_TOP = (35, 32, 90)
-NAVY_BOT = (7, 11, 20)
-CARD = (24, 33, 52)
-CARD_ALT = (20, 28, 45)
+BG_TOP = (38, 34, 98)
+BG_BOT = (8, 12, 24)
+CARD = (25, 34, 54)
+CARD2 = (20, 28, 46)
 GOLD = (245, 158, 11)
 GOLD2 = (250, 204, 21)
 INK = (241, 245, 249)
 MUTED = (148, 163, 184)
 GREEN = (74, 222, 128)
-DIM = (51, 65, 85)
-ROW_HL = {1: (92, 56, 22), 2: (52, 62, 80), 3: (70, 45, 24)}
-MEDAL_COL = {1: (250, 204, 21), 2: (203, 213, 225), 3: (217, 119, 6)}
+DARK = (17, 24, 39)
+MEDAL = {1: ((253, 230, 138), (245, 158, 11)), 2: ((241, 245, 249), (148, 163, 184)), 3: ((253, 186, 116), (180, 83, 9))}
 
-_font_cache = {}
+_fc = {}
 
 
 def font(size, weight="Bold"):
-    key = (size, weight)
-    if key in _font_cache:
-        return _font_cache[key]
-    try:
-        f = ImageFont.truetype(FONT_PATH, size)
+    k = (size, weight)
+    if k not in _fc:
         try:
-            f.set_variation_by_name(weight)
+            f = ImageFont.truetype(FONT_PATH, size)
+            try:
+                f.set_variation_by_name(weight)
+            except Exception:
+                pass
         except Exception:
-            pass
-    except Exception:
-        try:
-            f = ImageFont.truetype("DejaVuSans-Bold.ttf", size)
-        except Exception:
-            f = ImageFont.load_default()
-    _font_cache[key] = f
-    return f
+            try:
+                f = ImageFont.truetype("DejaVuSans-Bold.ttf", size)
+            except Exception:
+                f = ImageFont.load_default()
+        _fc[k] = f
+    return _fc[k]
 
 
-def fmt_money(val):
+def fmt_money(v):
     try:
-        return f"${int(round(val)):,}".replace(",", ".")
+        return f"${int(round(v)):,}".replace(",", ".")
     except Exception:
         return "$0"
 
 
-def _text_w(d, txt, f):
-    b = d.textbbox((0, 0), txt, font=f)
+def tw(d, t, f):
+    b = d.textbbox((0, 0), t, font=f)
     return b[2] - b[0]
 
 
-def _center(d, cx, y, txt, f, fill):
-    d.text((cx - _text_w(d, txt, f) / 2, y), txt, font=f, fill=fill)
+def center(d, cx, y, t, f, fill):
+    d.text((cx - tw(d, t, f) / 2, y), t, font=f, fill=fill)
 
 
-def _right(d, rx, y, txt, f, fill):
-    d.text((rx - _text_w(d, txt, f), y), txt, font=f, fill=fill)
+def right(d, rx, y, t, f, fill):
+    d.text((rx - tw(d, t, f), y), t, font=f, fill=fill)
 
 
-def _circle_logo(size):
+def fit(d, t, f_size, max_w, weight="Bold"):
+    """Achica la fuente si un nombre largo no cabe."""
+    s = f_size
+    while s > 18 and tw(d, t, font(s, weight)) > max_w:
+        s -= 2
+    return font(s, weight)
+
+
+def medal(img, cx, cy, r, pos):
+    d = ImageDraw.Draw(img)
+    if pos in MEDAL:
+        top, bot = MEDAL[pos]
+        for i in range(r, 0, -1):
+            t = i / r
+            c = tuple(int(top[k] * t + bot[k] * (1 - t)) for k in range(3))
+            d.ellipse((cx - i, cy - i, cx + i, cy + i), fill=c)
+        f = font(int(r * 1.15), "ExtraBold")
+        b = d.textbbox((0, 0), str(pos), font=f)
+        d.text((cx - (b[2] - b[0]) / 2 - b[0], cy - (b[3] - b[1]) / 2 - b[1]), str(pos), font=f, fill=DARK)
+    else:
+        f = font(int(r * 1.1), "Bold")
+        b = d.textbbox((0, 0), str(pos), font=f)
+        d.text((cx - (b[2] - b[0]) / 2 - b[0], cy - (b[3] - b[1]) / 2 - b[1]), str(pos), font=f, fill=MUTED)
+
+
+def circle_logo(size):
     for p in LOGO_CANDIDATES:
         if os.path.exists(p):
             try:
                 im = Image.open(p).convert("RGBA").resize((size, size), Image.Resampling.LANCZOS)
-                mask = Image.new("L", (size * 4, size * 4), 0)
-                ImageDraw.Draw(mask).ellipse((0, 0, size * 4 - 1, size * 4 - 1), fill=255)
-                im.putalpha(mask.resize((size, size), Image.Resampling.LANCZOS))
+                m = Image.new("L", (size * 4, size * 4), 0)
+                ImageDraw.Draw(m).ellipse((0, 0, size * 4 - 1, size * 4 - 1), fill=255)
+                im.putalpha(m.resize((size, size), Image.Resampling.LANCZOS))
                 return im
             except Exception:
                 return None
@@ -81,102 +104,87 @@ def generate_report_image(data):
     info = data.get("fechas_info", {})
     jugadas = [n for n in range(1, 11) if info.get(n, {}).get("registrada")]
     ultima = max(jugadas) if jugadas else None
-    total_rake = data["total_rake"]
     camp, mf = data["camp_total"], data["mf_total"]
     next_ev = next((s for s in data.get("schedule_data", []) if s.get("next")), None)
-
-    W, M = 1080, 48
     players = df.to_dict("records")
-    n_rows = max(len(players), 1)
-    ROW_H = 58
-    head_h, pod_h, tbl_head = 190, 0, 52
-    tbl_h = tbl_head + n_rows * (ROW_H + 6)
-    prize_h = 250
-    foot_h = 110
-    H = head_h + tbl_h + prize_h + foot_h + 60
+    resto = players[3:]
 
-    img = Image.new("RGB", (W, H), NAVY_BOT)
+    W, M = 1080, 56
+    ROW = 92
+    H = 330 + 380 + len(resto) * (ROW + 12) + 60 + 330 + 200
+    img = Image.new("RGB", (W, H), BG_BOT)
     d = ImageDraw.Draw(img)
-    # Fondo degradado vertical
     for y in range(H):
-        t = min(1, y / (H * 0.55))
-        c = tuple(int(NAVY_TOP[i] * (1 - t) + NAVY_BOT[i] * t) for i in range(3))
-        d.line([(0, y), (W, y)], fill=c)
+        t = min(1, y / (H * 0.5))
+        d.line([(0, y), (W, y)], fill=tuple(int(BG_TOP[i] * (1 - t) + BG_BOT[i] * t) for i in range(3)))
 
-    # ── Header
-    y = 40
-    logo = _circle_logo(120)
-    x_txt = M
+    # ── Encabezado
+    y = 48
+    logo = circle_logo(150)
     if logo:
-        d.ellipse((M - 4, y - 4, M + 124, y + 124), fill=GOLD)
-        img.paste(logo, (M, y), logo)
-        x_txt = M + 150
-    d.text((x_txt, y + 14), "BINGO POKER CLUB", font=font(50, "ExtraBold"), fill=GOLD2)
-    d.text((x_txt, y + 76), "LIGA DE POKER · TEMPORADA 2026", font=font(22, "Bold"), fill=(203, 213, 225))
-    tag = f"Tabla tras la Fecha {ultima:02d}" if ultima else "Temporada por comenzar"
-    d.text((x_txt, y + 106), tag, font=font(20, "SemiBold"), fill=MUTED)
-    y = head_h
+        d.ellipse((W / 2 - 80, y - 5, W / 2 + 80, y + 155), fill=GOLD)
+        img.paste(logo, (int(W / 2 - 75), y), logo)
+    y += 175
+    center(d, W / 2, y, "BINGO POKER CLUB", font(58, "ExtraBold"), GOLD2)
+    y += 76
+    tag = f"POSICIONES TRAS LA FECHA {ultima:02d}" if ultima else "TEMPORADA 2026"
+    f = font(26, "Bold")
+    w = tw(d, tag, f) + 50
+    d.rounded_rectangle((W / 2 - w / 2, y, W / 2 + w / 2, y + 48), radius=24, outline=GOLD, width=2)
+    center(d, W / 2, y + 9, tag, f, INK)
+    y += 90
 
-    # ── Tabla
-    col_pos, col_name = 64, 230
-    col_tot = 120
-    avail = W - 2 * M - col_pos - col_name - col_tot
-    col_f = min(70, avail // max(len(jugadas), 1)) if jugadas else 0
-    x_pos = M
-    x_name = x_pos + col_pos
-    x_f0 = x_name + col_name
-    x_tot_r = W - M - 18
+    # ── Podio (2º · 1º · 3º)
+    cw, gap = 300, 26
+    xs = [M, M + cw + gap, M + 2 * (cw + gap)]
+    order = [(1, xs[0], 60), (0, xs[1], 0), (2, xs[2], 60)]
+    for i, x, off in order:
+        if i >= len(players):
+            continue
+        p = players[i]
+        top = y + off
+        h = 330 - off
+        first = i == 0
+        d.rounded_rectangle((x, top, x + cw, top + h), radius=26, fill=(70, 45, 22) if first else CARD,
+                            outline=GOLD if first else (60, 72, 96), width=4 if first else 2)
+        r = 46 if first else 38
+        medal(img, x + cw / 2, top + 26 + r, r, i + 1)
+        ny = top + 40 + 2 * r
+        center(d, x + cw / 2, ny, str(p["Jugador"]), fit(d, str(p["Jugador"]), 40 if first else 36, cw - 30), INK)
+        center(d, x + cw / 2, ny + 54, f"{int(p['Total'])}", font(64 if first else 54, "ExtraBold"), GOLD2)
+        center(d, x + cw / 2, ny + (128 if first else 116), "puntos", font(22, "SemiBold"), MUTED)
+    y += 360
 
-    d.text((x_name + 14, y + 12), "JUGADOR", font=font(18, "ExtraBold"), fill=GOLD2)
-    for i, n in enumerate(jugadas):
-        cx = x_f0 + i * col_f + col_f / 2
-        _center(d, cx, y + 4, f"{n:02d}", font(18, "ExtraBold"), GOLD2)
-        sub = info[n].get("sub") or ""
-        if sub:
-            _center(d, cx, y + 28, sub, font(13, "Bold"), MUTED)
-    _right(d, x_tot_r, y + 12, "TOTAL", font(18, "ExtraBold"), GOLD2)
-    y += tbl_head
+    # ── Resto de la tabla
+    for idx, p in enumerate(resto):
+        pos = idx + 4
+        d.rounded_rectangle((M, y, W - M, y + ROW), radius=20, fill=CARD if idx % 2 == 0 else CARD2)
+        cy = y + ROW / 2
+        medal(img, M + 50, cy, 26, pos)
+        d.text((M + 100, cy - 24), str(p["Jugador"]), font=fit(d, str(p["Jugador"]), 40, 520), fill=INK)
+        lv = int(p.get(f"{ultima:02d}", 0)) if ultima else 0
+        if lv:
+            right(d, W - M - 190, cy - 16, f"+{lv}", font(30, "Bold"), GREEN)
+        right(d, W - M - 30, cy - 30, f"{int(p['Total'])}", font(52, "ExtraBold"), GOLD2)
+        y += ROW + 12
+    if resto:
+        d.text((M + 10, y), f"+pts = sumados en la Fecha {ultima:02d}", font=font(20, "SemiBold"), fill=MUTED)
+    y += 60
 
-    for idx, p in enumerate(players):
-        pos = idx + 1
-        bg = ROW_HL.get(pos, CARD if pos % 2 else CARD_ALT)
-        d.rounded_rectangle((M, y, W - M, y + ROW_H), radius=14, fill=bg,
-                            outline=GOLD if pos == 1 else None, width=2 if pos == 1 else 0)
-        cy = y + ROW_H / 2
-        if pos in MEDAL_COL:
-            r = 17
-            d.ellipse((x_pos + 30 - r, cy - r, x_pos + 30 + r, cy + r), fill=MEDAL_COL[pos])
-            _center(d, x_pos + 30, cy - 13, str(pos), font(22, "ExtraBold"), (17, 24, 39))
-        else:
-            _center(d, x_pos + 30, cy - 13, str(pos), font(22, "Bold"), MUTED)
-        d.text((x_name + 14, cy - 15), str(p["Jugador"]), font=font(25, "Bold"), fill=INK)
-        for i, n in enumerate(jugadas):
-            v = int(p.get(f"{n:02d}", 0))
-            cx = x_f0 + i * col_f + col_f / 2
-            _center(d, cx, cy - 12, str(v) if v else "·", font(21, "Bold"), GREEN if v else DIM)
-        _right(d, x_tot_r, cy - 17, str(int(p.get("Total", 0))), font(31, "ExtraBold"), GOLD2)
-        y += ROW_H + 6
+    # ── Premios
+    pw = (W - 2 * M - 24) / 2
+    for k, (title, total) in enumerate([("CAMPEONATO", camp), ("MESA FINAL", mf)]):
+        x = M + k * (pw + 24)
+        d.rounded_rectangle((x, y, x + pw, y + 300), radius=24, fill=CARD, outline=(110, 76, 22), width=2)
+        d.text((x + 30, y + 26), title, font=font(26, "ExtraBold"), fill=GOLD2)
+        d.text((x + 30, y + 62), fmt_money(total), font=font(46, "ExtraBold"), fill=INK)
+        for j, pct in enumerate([.5, .3, .2]):
+            yy = y + 140 + j * 50
+            medal(img, x + 50, yy + 18, 20, j + 1)
+            right(d, x + pw - 30, yy, fmt_money(total * pct), font(34, "Bold"), INK)
+    y += 340
 
-    # ── Pozos
-    y += 24
-    d.rounded_rectangle((M, y, W - M, y + prize_h - 30), radius=18, fill=CARD, outline=(92, 64, 20), width=2)
-    d.text((M + 28, y + 22), "RAKE TOTAL", font=font(18, "ExtraBold"), fill=MUTED)
-    d.text((M + 28, y + 46), fmt_money(total_rake), font=font(44, "ExtraBold"), fill=GOLD2)
-    d.text((M + 28, y + 110), f"{len(jugadas)} de 10 fechas jugadas", font=font(18, "SemiBold"), fill=MUTED)
-
-    def prize_col(x, title, total):
-        d.text((x, y + 22), title, font=font(18, "ExtraBold"), fill=GOLD2)
-        d.text((x, y + 46), fmt_money(total), font=font(28, "ExtraBold"), fill=INK)
-        for j, (lbl, pct) in enumerate([("1º", .5), ("2º", .3), ("3º", .2)]):
-            yy = y + 96 + j * 34
-            d.text((x, yy), lbl, font=font(20, "Bold"), fill=MUTED)
-            d.text((x + 50, yy), fmt_money(total * pct), font=font(22, "Bold"), fill=INK)
-
-    prize_col(M + 380, "CAMPEONATO 50%", camp)
-    prize_col(M + 690, "MESA FINAL 40%", mf)
-    y += prize_h
-
-    # ── Footer
+    # ── Próxima fecha
     if next_ev:
         txt = f"Próxima: {next_ev['fecha']} · {next_ev['desc']}"
     elif data.get("evento_final"):
@@ -184,12 +192,43 @@ def generate_report_image(data):
     else:
         txt = ""
     if txt:
-        tw = _text_w(d, txt, font(24, "Bold")) + 56
-        x0 = (W - tw) / 2
-        d.rounded_rectangle((x0, y, x0 + tw, y + 52), radius=26, fill=GOLD)
-        _center(d, W / 2, y + 12, txt, font(24, "Bold"), (17, 24, 39))
-    _center(d, W / 2, H - 44, "bingopoker.streamlit.app", font(18, "SemiBold"), MUTED)
+        f = font(28, "Bold")
+        while tw(d, txt, f) > W - 2 * M - 60 and f.size > 18:
+            f = font(f.size - 2, "Bold")
+        w = tw(d, txt, f) + 60
+        d.rounded_rectangle((W / 2 - w / 2, y, W / 2 + w / 2, y + 64), radius=32, fill=GOLD)
+        center(d, W / 2, y + 15, txt, f, DARK)
+    center(d, W / 2, H - 62, "Tabla completa en bingopoker.streamlit.app", font(24, "SemiBold"), MUTED)
 
     buf = io.BytesIO()
     img.save(buf, format="PNG", optimize=True)
     return buf.getvalue()
+
+
+def whatsapp_text(data):
+    """Resumen en texto con formato de WhatsApp (negritas con *)."""
+    df = data["df_posiciones"]
+    info = data.get("fechas_info", {})
+    jugadas = [n for n in range(1, 11) if info.get(n, {}).get("registrada")]
+    ultima = max(jugadas) if jugadas else None
+    camp, mf = data["camp_total"], data["mf_total"]
+    med = {1: "🥇", 2: "🥈", 3: "🥉"}
+    lines = ["🏆 *BINGO POKER CLUB 2026*"]
+    if ultima:
+        lines.append(f"Posiciones tras la Fecha {ultima:02d}")
+    lines.append("")
+    for i, p in enumerate(df.to_dict("records")):
+        pos = i + 1
+        lv = int(p.get(f"{ultima:02d}", 0)) if ultima else 0
+        extra = f" (+{lv})" if lv else ""
+        lines.append(f"{med.get(pos, f'{pos}.')} *{p['Jugador']}* — {int(p['Total'])} pts{extra}")
+    lines += ["",
+              f"💰 *Campeonato {fmt_money(camp)}*",
+              f"1º {fmt_money(camp * .5)} · 2º {fmt_money(camp * .3)} · 3º {fmt_money(camp * .2)}",
+              f"🃏 *Mesa Final {fmt_money(mf)}*",
+              f"1º {fmt_money(mf * .5)} · 2º {fmt_money(mf * .3)} · 3º {fmt_money(mf * .2)}"]
+    nxt = next((s for s in data.get("schedule_data", []) if s.get("next")), None)
+    if nxt:
+        lines += ["", f"📅 Próxima: *{nxt['fecha']}* · {nxt['desc']}"]
+    lines += ["", "👉 bingopoker.streamlit.app"]
+    return "\n".join(lines)

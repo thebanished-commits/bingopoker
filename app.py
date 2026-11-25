@@ -1,6 +1,8 @@
 import os
 import base64
 import html
+import json
+import urllib.parse
 import streamlit as st
 import data_manager
 import report_generator
@@ -46,6 +48,43 @@ def get_logo_b64():
 
 
 logo_b64 = get_logo_b64()
+
+
+@st.cache_data(show_spinner=False, max_entries=20)
+def _cached_image(key, _data):
+    return report_generator.generate_report_image(_data)
+
+
+def build_image(key, data):
+    # La clave es el texto del resumen: si cambian los datos, se regenera la imagen
+    return _cached_image(key + str(data.get("evento_final")), data)
+
+
+SHARE_HTML = """
+<div style="font-family:system-ui,sans-serif">
+<button id="b" style="width:100%;padding:14px;border:none;border-radius:12px;font-weight:800;font-size:16px;cursor:pointer;
+ background:linear-gradient(135deg,#22c55e,#16a34a);color:#04120a;box-shadow:0 4px 14px rgba(34,197,94,.35)">
+ 📲 Compartir imagen en WhatsApp</button>
+<div id="m" style="color:#94a3b8;font-size:13px;margin-top:8px;text-align:center">Se abre el menú del celular: elige WhatsApp y el grupo.</div>
+</div>
+<script>
+const B64="__IMG__", TXT=__TXT__;
+document.getElementById('b').onclick = async () => {
+  const m = document.getElementById('m');
+  const bin = atob(B64), arr = new Uint8Array(bin.length);
+  for (let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+  const file = new File([arr], 'bingo_poker_club.png', {type:'image/png'});
+  for (const nav of [window.parent && window.parent.navigator, navigator]) {
+    try {
+      if (nav && nav.canShare && nav.canShare({files:[file]})) { await nav.share({files:[file]}); m.textContent='¡Listo!'; return; }
+    } catch (e) { if (e.name === 'AbortError') { m.textContent='Cancelado.'; return; } }
+  }
+  const a = document.createElement('a'); a.href = 'data:image/png;base64,' + B64; a.download = 'bingo_poker_club.png';
+  document.body.appendChild(a); a.click(); a.remove();
+  m.textContent = 'Este navegador no permite compartir directo: la imagen se descargó, adjúntala en WhatsApp.';
+};
+</script>
+"""
 st.session_state.setdefault("is_admin", False)
 
 # ─── ESTILOS ─────────────────────────────────────────────────────────────────
@@ -100,18 +139,22 @@ h1,h2,h3 { font-family:'Outfit', sans-serif !important; letter-spacing:.3px; }
 .md.xl { width:58px; height:58px; font-size:1.85rem; }
 
 /* Bloque de pozos */
-.money { display:grid; grid-template-columns:1.25fr 1fr 1fr; gap:12px; margin:26px 0 8px; }
-.mtot { border-radius:16px; padding:16px 20px; background:linear-gradient(135deg,#fbbf24,#d97706); color:#111827;
-        box-shadow:0 8px 26px rgba(245,158,11,.3); }
+.money { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:28px 0 14px; }
+.mcard { border-radius:18px; padding:16px 20px; background:var(--card); border:1px solid rgba(245,158,11,.45);
+         box-shadow:0 8px 24px rgba(0,0,0,.3); }
+.mh { display:flex; justify-content:space-between; align-items:baseline; }
+.mh small { color:var(--ink); font-size:1.05rem; font-weight:800; }
+.mh em { font-style:normal; color:var(--muted); font-size:.78rem; font-weight:700; }
+.mt { font-family:'Outfit',sans-serif; font-size:2rem; font-weight:800; color:var(--gold2); line-height:1.15;
+      padding-bottom:8px; margin-bottom:6px; border-bottom:1px solid var(--line); }
+.pr { display:flex; align-items:center; justify-content:space-between; padding:4px 0; }
+.pr b { font-family:'Outfit',sans-serif; font-size:1.2rem; font-weight:700; color:var(--ink); }
+.pr .md { width:26px; height:26px; font-size:.85rem; }
+.mtot { border-radius:16px; padding:16px 20px; margin:6px 0 16px; background:linear-gradient(135deg,#fbbf24,#d97706); color:#111827;
+        box-shadow:0 8px 26px rgba(245,158,11,.3); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
 .mtot small { display:block; font-size:.75rem; font-weight:800; letter-spacing:1px; text-transform:uppercase; opacity:.8; }
-.mtot b { display:block; font-family:'Outfit',sans-serif; font-size:2.3rem; font-weight:800; line-height:1.1; }
-.mtot span { font-size:.82rem; font-weight:700; opacity:.8; }
-.mcard { border-radius:16px; padding:16px 18px; background:var(--card); border:1px solid rgba(245,158,11,.4); }
-.mcard small { display:block; color:var(--ink); font-size:.95rem; font-weight:800; }
-.mcard em { display:block; font-style:normal; color:var(--muted); font-size:.75rem; font-weight:700; margin-bottom:4px; }
-.mcard b { font-family:'Outfit',sans-serif; font-size:1.9rem; font-weight:800; color:var(--gold2); }
-.morg { text-align:right; color:var(--muted); font-size:.8rem; font-weight:700; margin-bottom:12px; }
-.morg b { color:#cbd5e1; }
+.mtot b { display:block; font-family:'Outfit',sans-serif; font-size:2.2rem; font-weight:800; line-height:1.1; }
+.mtot span { font-size:.85rem; font-weight:700; opacity:.85; text-align:right; }
 
 /* Franja de pozos */
 .strip { display:grid; grid-template-columns:repeat(4,1fr); background:var(--card); border:1px solid var(--line);
@@ -236,10 +279,10 @@ h1,h2,h3 { font-family:'Outfit', sans-serif !important; letter-spacing:.3px; }
   .lb.lbx td:nth-child(2), .lb.lbx th:nth-child(2) { position:sticky; left:0; z-index:1; background:#141b2e; }
   .lb.lbx tr.r1 td:nth-child(2) { background:#3a2614; }
   .md { width:26px; height:26px; font-size:.9rem; } .md.lg { width:36px; height:36px; font-size:1.15rem; } .md.xl { width:44px; height:44px; font-size:1.4rem; }
-  .money { grid-template-columns:1fr 1fr; gap:10px; margin-top:20px; }
-  .mtot { grid-column:1 / -1; padding:14px 16px; } .mtot b { font-size:1.9rem; }
-  .mcard { padding:12px 14px; } .mcard small { font-size:.85rem; } .mcard b { font-size:1.35rem; }
-  .morg { text-align:center; }
+  .money { gap:10px; margin-top:22px; }
+  .mcard { padding:12px 12px; } .mh { flex-direction:column; } .mh small { font-size:.92rem; } .mh em { font-size:.7rem; }
+  .mt { font-size:1.45rem; } .pr b { font-size:.98rem; } .pr .md { width:22px; height:22px; font-size:.75rem; }
+  .mtot b { font-size:1.8rem; } .mtot span { text-align:left; }
   .prizes { grid-template-columns:1fr; } .rakes { grid-template-columns:repeat(2,1fr); }
   .cal { flex-direction:column; align-items:flex-start; gap:4px; }
   .stTabs [role="tab"] { padding:6px 12px !important; } .stTabs [role="tab"] p { font-size:.85rem !important; }
@@ -252,7 +295,7 @@ with st.sidebar:
     st.markdown("### Acceso administrador")
     if not st.session_state["is_admin"]:
         pwd = st.text_input("Clave de administrador", type="password")
-        if st.button("Ingresar", use_container_width=True):
+        if st.button("Ingresar", width="stretch"):
             if ADMIN_PASSWORD and pwd == ADMIN_PASSWORD:
                 st.session_state["is_admin"] = True
                 st.rerun()
@@ -260,7 +303,7 @@ with st.sidebar:
                 st.error("Clave incorrecta")
     else:
         st.success("Modo administrador activo")
-        if st.button("Salir de modo admin", use_container_width=True):
+        if st.button("Salir de modo admin", width="stretch"):
             st.session_state["is_admin"] = False
             st.rerun()
 
@@ -316,14 +359,16 @@ if has_data:
 
     st.markdown(f'<div class="podium">{pod(1)}{pod(0, "first")}{pod(2)}</div>', unsafe_allow_html=True)
 
-st.markdown(f"""
-<div class="money">
-  <div class="mtot"><small>Rake total acumulado</small><b>{fmt_money(total_rake)}</b><span>{len(jugadas)} de {N_FECHAS} fechas jugadas</span></div>
-  <div class="mcard"><small>🏆 Campeonato</small><em>50% del rake</em><b>{fmt_money(camp_total)}</b></div>
-  <div class="mcard"><small>🃏 Mesa Final</small><em>40% del rake</em><b>{fmt_money(mf_total)}</b></div>
-</div>
-<div class="morg">Organización (10%): <b>{fmt_money(gastos_mf)}</b></div>
-""", unsafe_allow_html=True)
+def prize_card(title, pct, total):
+    rows = "".join(
+        f'<div class="pr">{medal(k)}<b>{fmt_money(total * f)}</b></div>' for k, f in [(1, .5), (2, .3), (3, .2)]
+    )
+    return (f'<div class="mcard"><div class="mh"><small>{title}</small><em>{pct}</em></div>'
+            f'<div class="mt">{fmt_money(total)}</div>{rows}</div>')
+
+
+st.markdown(f'<div class="money">{prize_card("🏆 Campeonato", "50% del rake", camp_total)}'
+            f'{prize_card("🃏 Mesa Final", "40% del rake", mf_total)}</div>', unsafe_allow_html=True)
 
 # ─── TABS ────────────────────────────────────────────────────────────────────
 if st.session_state["is_admin"]:
@@ -372,31 +417,41 @@ with t_pos:
             unsafe_allow_html=True,
         )
 
-    st.markdown('<div class="sec-title" style="margin-top:1.4rem">Imagen para WhatsApp</div>'
-                '<div class="sec-cap">Genera la imagen oficial de la tabla para compartir en el grupo.</div>', unsafe_allow_html=True)
-    if st.button("Generar imagen"):
-        st.session_state["report_img"] = report_generator.generate_report_image(data)
-    if "report_img" in st.session_state:
-        st.image(st.session_state["report_img"], use_container_width=True)
-        st.download_button("Descargar PNG", data=st.session_state["report_img"],
-                           file_name="bingo_poker_club_posiciones.png", mime="image/png", use_container_width=True)
+    st.markdown('<div class="sec-title" style="margin-top:1.4rem">Compartir en WhatsApp</div>'
+                '<div class="sec-cap">Imagen lista para el grupo, o el resumen en texto.</div>', unsafe_allow_html=True)
+    if has_data:
+        wa_text = report_generator.whatsapp_text(data)
+        img_bytes = build_image(wa_text, data)
+        c_img, c_act = st.columns([1, 1])
+        with c_img:
+            st.image(img_bytes, width="stretch")
+        with c_act:
+            b64 = base64.b64encode(img_bytes).decode()
+            share_html = SHARE_HTML.replace("__IMG__", b64).replace("__TXT__", json.dumps(wa_text))
+            if hasattr(st, "iframe"):
+                st.iframe(share_html, height=150)
+            else:  # Streamlit antiguo
+                import streamlit.components.v1 as components
+                components.html(share_html, height=150)
+            st.download_button("⬇️ Descargar imagen", data=img_bytes, file_name="bingo_poker_club_posiciones.png",
+                               mime="image/png", width="stretch")
+            st.link_button("💬 Enviar resumen en texto", "https://wa.me/?text=" + urllib.parse.quote(wa_text),
+                           width="stretch")
+            with st.expander("Ver el texto del resumen"):
+                st.code(wa_text, language=None)
 
 # ─── POZOS ───────────────────────────────────────────────────────────────────
 with t_poz:
-    st.markdown('<div class="sec-title">Distribución de premios</div>'
-                '<div class="sec-cap">Según el rake acumulado de la temporada.</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="mtot"><div><small>Rake total acumulado</small><b>{fmt_money(total_rake)}</b></div>'
+                f'<span>{len(jugadas)} de {N_FECHAS} fechas jugadas<br>Se reparte 50% · 40% · 10%</span></div>', unsafe_allow_html=True)
     st.markdown(f"""
     <div class="prizes">
       <div class="prize"><h4>Campeonato · 50%</h4><div class="tot">{fmt_money(camp_total)}</div>
-        <div class="row"><span class="pl">{medal(1)} 1º lugar · 50%</span><b>{fmt_money(camp_total * .5)}</b></div>
-        <div class="row"><span class="pl">{medal(2)} 2º lugar · 30%</span><b>{fmt_money(camp_total * .3)}</b></div>
-        <div class="row"><span class="pl">{medal(3)} 3º lugar · 20%</span><b>{fmt_money(camp_total * .2)}</b></div></div>
+        <div class="row"><span>Premios 1º, 2º y 3º del ranking</span><b>50/30/20</b></div></div>
       <div class="prize"><h4>Mesa Final · 40%</h4><div class="tot">{fmt_money(mf_total)}</div>
-        <div class="row"><span class="pl">{medal(1)} 1º lugar · 50%</span><b>{fmt_money(mf_total * .5)}</b></div>
-        <div class="row"><span class="pl">{medal(2)} 2º lugar · 30%</span><b>{fmt_money(mf_total * .3)}</b></div>
-        <div class="row"><span class="pl">{medal(3)} 3º lugar · 20%</span><b>{fmt_money(mf_total * .2)}</b></div></div>
+        <div class="row"><span>Premios 1º, 2º y 3º de la final</span><b>50/30/20</b></div></div>
       <div class="prize"><h4>Organización · 10%</h4><div class="tot">{fmt_money(gastos_mf)}</div>
-        <div class="row"><span>Logística y organización</span><b>10% del rake</b></div></div>
+        <div class="row"><span>Logística y organización</span><b>10%</b></div></div>
     </div>""", unsafe_allow_html=True)
 
     st.markdown('<div class="sec-title">Rake por fecha</div>', unsafe_allow_html=True)
@@ -426,7 +481,7 @@ with t_cal:
                 if st.form_submit_button("Guardar"):
                     ok, err = data_manager.update_evento_final(txt.strip())
                     if ok:
-                        st.session_state.pop("report_img", None)
+                        st.cache_data.clear()
                         st.rerun()
                     else:
                         st.error(f"Error: {err}")
@@ -516,15 +571,14 @@ if t_reg is not None:
         b1, b2, _ = st.columns([2, 1, 3])
         with b1:
             save = st.button("💾 Guardar fecha" if not info["registrada"] else "💾 Guardar corrección",
-                             disabled=locked or not resultados, use_container_width=True)
+                             disabled=locked or not resultados, width="stretch")
         with b2:
-            st.button("Limpiar", on_click=limpiar, disabled=locked, use_container_width=True)
+            st.button("Limpiar", on_click=limpiar, disabled=locked, width="stretch")
 
         if save:
             with st.spinner("Guardando..."):
                 ok, err = data_manager.save_fecha(n, tipo, sub_code, rake, resultados)
             if ok:
-                st.session_state.pop("report_img", None)
                 st.session_state["reg_done"] = n
                 st.session_state["reg_msg"] = f"✅ Fecha {n:02d} guardada."
                 st.rerun()
@@ -538,7 +592,6 @@ if t_reg is not None:
                 if st.button("Borrar fecha", disabled=not conf, key=f"reg_del_{n}"):
                     ok, err = data_manager.delete_fecha(n)
                     if ok:
-                        st.session_state.pop("report_img", None)
                         st.session_state["reg_done"] = n
                         st.session_state["reg_msg"] = f"🗑️ Fecha {n:02d} borrada."
                         st.rerun()
